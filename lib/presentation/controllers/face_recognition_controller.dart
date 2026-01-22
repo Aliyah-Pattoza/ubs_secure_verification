@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/services/api_service.dart';
-import '../../data/models/models.dart';
-import '../../routes/app_routes.dart';
+import '../../data/models/user_model.dart';
+import '../../data/models/transaction_model.dart';
+import '../../app/routes/app_routes.dart';
 
 class FaceRecognitionController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -79,10 +80,9 @@ class FaceRecognitionController extends GetxController
     statusSubMessage.value = 'Verifying your identity';
 
     try {
-      // Panggil API Face Recognition
-      // Di production, capture image dari camera dan convert ke base64
+      // Panggil API Face Recognition (static method)
       final response = await ApiService.verifyFace(
-        base64Image: 'mock_base64_image', // Ganti dengan real image
+        base64Image: 'mock_base64_image',
         userId: user?.id ?? '',
         nik: user?.nik ?? '',
       );

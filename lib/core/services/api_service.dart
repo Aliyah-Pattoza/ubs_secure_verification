@@ -344,38 +344,3 @@ class ApiService {
     }
   }
 }
-
-// ============================================
-// DEVICE SERVICE - Untuk mendapatkan IMEI/Android ID
-// ============================================
-
-class DeviceService {
-  /// Mendapatkan Device ID (Android ID / iOS Identifier)
-  /// Catatan: IMEI tidak bisa diakses di Android 10+ karena privacy
-  static Future<String> getDeviceId() async {
-    try {
-      // ========== MOCK RESPONSE (UNTUK TESTING) ==========
-      return 'MOCK_DEVICE_${DateTime.now().millisecondsSinceEpoch}';
-      // ========== END MOCK RESPONSE ==========
-
-      // ========== REAL IMPLEMENTATION ==========
-      // Uncomment dan tambahkan dependency: device_info_plus
-      /*
-      final deviceInfo = DeviceInfoPlugin();
-      
-      if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        // Gunakan Android ID (bukan IMEI karena privacy restrictions)
-        return androidInfo.id;
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        return iosInfo.identifierForVendor ?? '';
-      }
-      
-      return '';
-      */
-    } catch (e) {
-      return 'UNKNOWN_DEVICE';
-    }
-  }
-}

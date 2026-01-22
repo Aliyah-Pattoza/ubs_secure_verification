@@ -1,29 +1,16 @@
-import 'package:ubs_secure_verification/core/constants/api_constants.dart';
-import 'package:ubs_secure_verification/core/services/face_recognition_service.dart';
-
 import '../models/transaction_model.dart';
 import '../../core/services/api_service.dart';
 
 class TransactionRepository {
-  final ApiService _apiService = ApiService();
-  
-  Future<List<TransactionModel>> getPendingTransactions() async {
+  /// Get pending transactions
+  /// Menggunakan ApiService.getTransactionList() yang sudah ada
+  Future<List<TransactionModel>> getPendingTransactions({String? token}) async {
     try {
-      final response = await _apiService.get(
-        ApiConstants.baseUrlList + ApiConstants.transactionList,
-      );
-      
-      List<TransactionModel> transactions = [];
-      for (var item in response.data['transactions']) {
-        transactions.add(TransactionModel.fromJson(item));
-      }
-      
+      // Menggunakan static method dari ApiService
+      final transactions = await ApiService.getTransactionList(token: token);
       return transactions;
     } catch (e) {
       throw Exception('Failed to load transactions: $e');
     }
   }
-}
-
-class TransactionModel {
 }

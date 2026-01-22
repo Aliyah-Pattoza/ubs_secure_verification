@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../themes/app_colors.dart';
-import '../../data/models/models.dart';
-import '../../routes/app_routes.dart';
+import '../../../app/themes/app_colors.dart';
+import '../../../data/models/user_model.dart';
+import '../../../data/models/transaction_model.dart';
+import '../../../app/routes/app_routes.dart';
 
 class SuccessScreen extends StatefulWidget {
   const SuccessScreen({super.key});

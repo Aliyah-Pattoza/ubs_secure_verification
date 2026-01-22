@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/services/api_service.dart';
-import '../../data/models/models.dart';
-import '../../routes/app_routes.dart';
+import '../../core/utils/device_helper.dart';
+import '../../data/models/user_model.dart';
+import '../../app/routes/app_routes.dart';
 
 class LoginController extends GetxController {
   // Form Controllers
@@ -63,7 +64,7 @@ class LoginController extends GetxController {
 
     try {
       // Get device ID (IMEI/Android ID)
-      final deviceId = await DeviceService.getDeviceId();
+      final deviceId = await DeviceHelper.getDeviceId();
 
       // Call login API
       final response = await ApiService.login(
