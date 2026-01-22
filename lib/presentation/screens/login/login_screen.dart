@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final deviceId = await DeviceHelper.getDeviceId();
 
-      final response = await _apiService.login(
+      final response = await ApiService.login(
         userId: _userIdController.text.trim(),
         password: _passwordController.text,
         imei: deviceId,

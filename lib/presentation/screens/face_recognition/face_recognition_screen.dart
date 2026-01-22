@@ -85,7 +85,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     });
 
     try {
-      final response = await _apiService.verifyFace(
+      final response = await ApiService.verifyFace(
         base64Image: 'mock_base64_image',
         userId: user?.id ?? '',
         nik: user?.nik ?? '',
@@ -132,7 +132,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
   Future<void> _processApproval() async {
     try {
-      final response = await _apiService.submitApproval(
+      final response = await ApiService.submitApproval(
         documentNumber: pendingTransaction!.documentNumber,
         status: approvalAction == 'accept' ? 'accepted' : 'rejected',
         base64Image: 'mock_base64_image',
