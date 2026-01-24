@@ -1,63 +1,251 @@
-import 'dart:io';
-import 'package:dio/dio.dart';
-import 'api_service.dart';
-import '../constants/api_constants.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import '../../data/models/api_response_model.dart';
 
+/// Service khusus untuk Face Recognition
 class FaceRecognitionService {
-  final ApiService _apiService = ApiService();
-  
-  Future<Map<String, dynamic>> recognizeFace(File imageFile, String nik) async {
-    try {
-      // Create multipart form data
-      FormData formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(
-          imageFile.path,
-          filename: 'face.jpg',
-        ),
-        'nik': nik,
-      });
-      
-      // Send to API
-      final response = await _apiService.postMultipart(
-        ApiConstants.testFRUrl, // Ganti dengan API sebenarnya
-        formData,
-      );
-      
-      return response.data;
-    } catch (e) {
-      throw Exception('Face recognition failed: $e');
-    }
-  }
-  
-  Future<Map<String, dynamic>> verifyTransaction(
-    File imageFile, 
-    String nik, 
-    String documentId,
-    String status,
-  ) async {
-    try {
-      FormData formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(
-          imageFile.path,
-          filename: 'face.jpg',
-        ),
-        'nik': nik,
-        'document_id': documentId,
-        'status': status,
-      });
-      
-      final response = await _apiService.postMultipart(
-        ApiConstants.baseUrlVerification + ApiConstants.verifyTransaction,
-        formData,
-      );
-      
-      return response.data;
-    } catch (e) {
-      throw Exception('Transaction verification failed: $e');
-    }
-  }
-}
+  // API URLs
+  static const String _baseFrUrl = 'http://xxx.xxx.xxx.xxx';
+  static const String _testFrUrl = 'https://apifr.free.beeceptor.com/recognize';
 
-class ApiService {
-  Future<dynamic> postMultipart(String testFRUrl, FormData formData) async {}
+  // Timeout
+  static const Duration _timeout = Duration(seconds: 30);
+
+  // Minimum confidence threshold untuk match
+  static const double _minConfidenceThreshold = 0.75;
+
+  /// Headers untuk API request
+  static Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+
+  /// Konversi Uint8List (image bytes) ke Base64 string
+  static String convertToBase64(Uint8List imageBytes) {
+    return base64Encode(imageBytes);
+  }
+
+  /// Konversi Base64 string ke Uint8List
+  static Uint8List convertFromBase64(String base64String) {
+    return base64Decode(base64String);
+  }
+
+  /// Compress image jika terlalu besar (optional)
+  static Future<Uint8List> compressImage(Uint8List imageBytes, {int maxSizeKB = 500}) async {
+    // Jika ukuran sudah di bawah threshold, return langsung
+    if (imageBytes.length <= maxSizeKB * 1024) {
+      return imageBytes;
+    }
+
+    // TODO: Implement image compression jika diperlukan
+    // Bisa menggunakan package seperti flutter_image_compress
+    debugPrint('⚠️ Image size: ${imageBytes.length ~/ 1024}KB (max: ${maxSizeKB}KB)');
+
+    return imageBytes;
+  }
+
+  /// Verifikasi wajah dengan API
+  static Future<FaceRecognitionResponse> verifyFace({
+    required String base64Image,
+    required String userId,
+    required String nik,
+    String? token,
+  }) async {
+    try {
+      debugPrint('🔐 FaceRecognitionService.verifyFace()');
+      debugPrint('   User ID: $userId');
+      debugPrint('   NIK: $nik');
+      debugPrint('   Image size: ${base64Image.length} chars');
+
+      // ========== MOCK RESPONSE (UNTUK TESTING) ==========
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Simulasi random confidence (untuk testing)
+      final confidence = 0.85 + (DateTime.now().millisecond % 15) / 100;
+      final isMatch = confidence >= _minConfidenceThreshold;
+
+      debugPrint('   Mock confidence: $confidence');
+      debugPrint('   Is match: $isMatch');
+
+      return FaceRecognitionResponse(
+        success: true,
+        message: isMatch ? 'Wajah terverifikasi' : 'Wajah tidak cocok',
+        confidence: confidence,
+        isMatch: isMatch,
+        userId: userId,
+      );
+      // ========== END MOCK RESPONSE ==========
+
+      // ========== REAL API CALL ==========
+      /*
+      final response = await http.post(
+        Uri.parse('$_baseFrUrl/api/face/verify'),
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'image': base64Image,
+          'user_id': userId,
+          'nik': nik,
+        }),
+      ).timeout(_timeout);
+
+      debugPrint('   Response status: ${response.statusCode}');
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return FaceRecognitionResponse.fromJson(data);
+      } else {
+        return FaceRecognitionResponse(
+          success: false,
+          message: data['message'] ?? 'Verifikasi gagal',
+          confidence: 0,
+          isMatch: false,
+        );
+      }
+      */
+    } catch (e) {
+      debugPrint('❌ Error: $e');
+      return FaceRecognitionResponse(
+        success: false,
+        message: 'Gagal verifikasi wajah: ${e.toString()}',
+        confidence: 0,
+        isMatch: false,
+      );
+    }
+  }
+
+  /// Register wajah baru untuk user
+  static Future<FaceRecognitionResponse> registerFace({
+    required String base64Image,
+    required String userId,
+    required String nik,
+    required String name,
+    String? token,
+  }) async {
+    try {
+      debugPrint('📝 FaceRecognitionService.registerFace()');
+      debugPrint('   User ID: $userId');
+      debugPrint('   Name: $name');
+
+      // ========== MOCK RESPONSE ==========
+      await Future.delayed(const Duration(seconds: 2));
+
+      return FaceRecognitionResponse(
+        success: true,
+        message: 'Wajah berhasil didaftarkan',
+        userId: userId,
+      );
+      // ========== END MOCK ==========
+
+      // ========== REAL API CALL ==========
+      /*
+      final response = await http.post(
+        Uri.parse('$_baseFrUrl/api/face/register'),
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'image': base64Image,
+          'user_id': userId,
+          'nik': nik,
+          'name': name,
+        }),
+      ).timeout(_timeout);
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return FaceRecognitionResponse(
+          success: true,
+          message: data['message'] ?? 'Wajah berhasil didaftarkan',
+          userId: userId,
+        );
+      } else {
+        return FaceRecognitionResponse(
+          success: false,
+          message: data['message'] ?? 'Gagal mendaftarkan wajah',
+        );
+      }
+      */
+    } catch (e) {
+      debugPrint('❌ Error: $e');
+      return FaceRecognitionResponse(
+        success: false,
+        message: 'Gagal mendaftarkan wajah: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Test Face Recognition dengan Beeceptor API
+  static Future<FaceRecognitionResponse> testWithBeeceptor({
+    required String base64Image,
+  }) async {
+    try {
+      debugPrint('🧪 Testing with Beeceptor API...');
+
+      final response = await http.post(
+        Uri.parse(_testFrUrl),
+        headers: _headers,
+        body: jsonEncode({
+          'image': base64Image,
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
+      ).timeout(_timeout);
+
+      debugPrint('   Response status: ${response.statusCode}');
+      debugPrint('   Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return FaceRecognitionResponse.fromJson(data);
+      } else {
+        return FaceRecognitionResponse(
+          success: false,
+          message: 'Test API error: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Test error: $e');
+      return FaceRecognitionResponse(
+        success: false,
+        message: 'Gagal terhubung ke test API: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Cek kualitas gambar (brightness, blur, face position)
+  static Map<String, dynamic> checkImageQuality(Uint8List imageBytes) {
+    // TODO: Implement image quality check
+    // Bisa menggunakan ML atau simple heuristics
+
+    return {
+      'isGoodQuality': true,
+      'brightness': 'normal',
+      'blur': 'none',
+      'facePosition': 'center',
+      'suggestions': <String>[],
+    };
+  }
+
+  /// Validasi apakah base64 string valid
+  static bool isValidBase64(String base64String) {
+    try {
+      base64Decode(base64String);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Get estimated image size dari base64 string
+  static int getEstimatedImageSize(String base64String) {
+    // Base64 encoding increases size by ~33%
+    return (base64String.length * 3 / 4).round();
+  }
 }

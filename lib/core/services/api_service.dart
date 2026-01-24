@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../data/models/user_model.dart';
 import '../../data/models/transaction_model.dart';
@@ -29,6 +30,41 @@ class ApiService {
   static const Duration timeoutDuration = Duration(seconds: 30);
 
   // ============================================
+  // REGISTERED DEVICES - Simulasi database IMEI terdaftar
+  // Ganti dengan API call ke backend di production
+  // ============================================
+
+  static final Map<String, List<String>> _registeredDevices = {
+    'admin': ['WEB_DEVICE', 'ANDROID_001', 'IOS_001'], // Device yang terdaftar untuk admin
+    'user': ['WEB_DEVICE', 'ANDROID_002', 'IOS_002'],   // Device yang terdaftar untuk user
+  };
+
+  // ============================================
+  // MOCK USER DATA - Simulasi database user
+  // ============================================
+
+  static final Map<String, Map<String, dynamic>> _mockUsers = {
+    'admin': {
+      'password': 'admin123',
+      'id': '1',
+      'name': 'Admin UBS',
+      'nik': 'UBS001',
+      'email': 'admin@ubsgold.com',
+      'department': 'IT Department',
+      'role': 'Administrator',
+    },
+    'user': {
+      'password': 'user123',
+      'id': '2',
+      'name': 'Nayeon',
+      'nik': 'UBS002',
+      'email': 'nayeon@ubsgold.com',
+      'department': 'Finance',
+      'role': 'Staff',
+    },
+  };
+
+  // ============================================
   // HEADERS
   // ============================================
 
@@ -54,45 +90,59 @@ class ApiService {
     required String imei,
   }) async {
     try {
+      debugPrint('🔐 ApiService.login()');
+      debugPrint('   User ID: $userId');
+      debugPrint('   IMEI: $imei');
+
       // ========== MOCK RESPONSE (UNTUK TESTING) ==========
-      // Hapus bagian ini saat integrasi dengan API real
+      // Simulasi network delay
       await Future.delayed(const Duration(seconds: 2));
 
-      // Simulasi validasi login
-      if (userId == 'admin' && password == 'admin123') {
-        return AuthResponse(
-          success: true,
-          message: 'Login berhasil',
-          token: 'mock_token_${DateTime.now().millisecondsSinceEpoch}',
-          user: UserModel(
-            id: '1',
-            name: 'Admin UBS',
-            nik: 'UBS001',
-            email: 'admin@ubsgold.com',
-            department: 'IT',
-            deviceImei: imei,
-          ),
-        );
-      } else if (userId == 'user' && password == 'user123') {
-        return AuthResponse(
-          success: true,
-          message: 'Login berhasil',
-          token: 'mock_token_${DateTime.now().millisecondsSinceEpoch}',
-          user: UserModel(
-            id: '2',
-            name: 'Nayeon',
-            nik: 'UBS002',
-            email: 'nayeon@ubsgold.com',
-            department: 'Finance',
-            deviceImei: imei,
-          ),
-        );
-      } else {
+      // 1. Cek apakah user exists
+      if (!_mockUsers.containsKey(userId.toLowerCase())) {
+        debugPrint('   ❌ User not found');
         return AuthResponse(
           success: false,
-          message: 'User ID atau Password salah',
+          message: 'User ID tidak ditemukan',
         );
       }
+
+      final userData = _mockUsers[userId.toLowerCase()]!;
+
+      // 2. Validasi password
+      if (userData['password'] != password) {
+        debugPrint('   ❌ Wrong password');
+        return AuthResponse(
+          success: false,
+          message: 'Password salah',
+        );
+      }
+
+      // 3. Validasi IMEI/Device ID
+      final isDeviceRegistered = _validateDeviceId(userId.toLowerCase(), imei);
+      if (!isDeviceRegistered) {
+        debugPrint('   ❌ Device not registered');
+        return AuthResponse(
+          success: false,
+          message: 'Perangkat tidak terdaftar. IMEI: $imei',
+        );
+      }
+
+      // 4. Login berhasil!
+      debugPrint('   ✅ Login successful');
+      return AuthResponse(
+        success: true,
+        message: 'Login berhasil',
+        token: 'mock_token_${DateTime.now().millisecondsSinceEpoch}',
+        user: UserModel(
+          id: userData['id'],
+          name: userData['name'],
+          nik: userData['nik'],
+          email: userData['email'],
+          department: userData['department'],
+          deviceImei: imei,
+        ),
+      );
       // ========== END MOCK RESPONSE ==========
 
       // ========== REAL API CALL ==========
@@ -109,9 +159,19 @@ class ApiService {
       ).timeout(timeoutDuration);
 
       final data = jsonDecode(response.body);
-      
+
       if (response.statusCode == 200) {
         return AuthResponse.fromJson(data);
+      } else if (response.statusCode == 401) {
+        return AuthResponse(
+          success: false,
+          message: data['message'] ?? 'User ID atau Password salah',
+        );
+      } else if (response.statusCode == 403) {
+        return AuthResponse(
+          success: false,
+          message: data['message'] ?? 'Perangkat tidak terdaftar',
+        );
       } else {
         return AuthResponse(
           success: false,
@@ -120,10 +180,58 @@ class ApiService {
       }
       */
     } catch (e) {
+      debugPrint('   ❌ Error: $e');
       return AuthResponse(
         success: false,
         message: 'Gagal terhubung ke server: ${e.toString()}',
       );
+    }
+  }
+
+  /// Validasi apakah device ID terdaftar untuk user tertentu
+  static bool _validateDeviceId(String userId, String imei) {
+    // Untuk Web, selalu izinkan (dengan prefix WEB_DEVICE)
+    if (imei.startsWith('WEB_DEVICE')) {
+      debugPrint('   ℹ️ Web device detected, allowing...');
+      return true;
+    }
+
+    // Cek di registered devices
+    final userDevices = _registeredDevices[userId];
+    if (userDevices == null) {
+      return false;
+    }
+
+    // Cek exact match atau prefix match
+    for (final device in userDevices) {
+      if (imei == device || imei.startsWith(device)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Register device baru untuk user
+  static Future<bool> registerDevice({
+    required String userId,
+    required String imei,
+    required String token,
+  }) async {
+    try {
+      // Mock implementation
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!_registeredDevices.containsKey(userId)) {
+        _registeredDevices[userId] = [];
+      }
+      _registeredDevices[userId]!.add(imei);
+
+      debugPrint('📱 Device registered: $imei for user: $userId');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error registering device: $e');
+      return false;
     }
   }
 
@@ -138,6 +246,8 @@ class ApiService {
     required String nik,
   }) async {
     try {
+      debugPrint('👤 ApiService.verifyFace()');
+
       // ========== MOCK RESPONSE (UNTUK TESTING) ==========
       await Future.delayed(const Duration(seconds: 2));
 
@@ -166,6 +276,7 @@ class ApiService {
       return FaceRecognitionResponse.fromJson(data);
       */
     } catch (e) {
+      debugPrint('❌ Error: $e');
       return FaceRecognitionResponse(
         success: false,
         message: 'Gagal verifikasi wajah: ${e.toString()}',
@@ -180,10 +291,10 @@ class ApiService {
     try {
       final response = await http
           .post(
-            Uri.parse(testFrUrl),
-            headers: _headers,
-            body: jsonEncode({'image': base64Image}),
-          )
+        Uri.parse(testFrUrl),
+        headers: _headers,
+        body: jsonEncode({'image': base64Image}),
+      )
           .timeout(timeoutDuration);
 
       if (response.statusCode == 200) {
@@ -212,6 +323,8 @@ class ApiService {
     String? token,
   }) async {
     try {
+      debugPrint('📋 ApiService.getTransactionList()');
+
       // ========== MOCK RESPONSE (UNTUK TESTING) ==========
       await Future.delayed(const Duration(seconds: 1));
 
@@ -275,6 +388,7 @@ class ApiService {
       }
       */
     } catch (e) {
+      debugPrint('❌ Error: $e');
       throw Exception('Gagal mengambil data transaksi: ${e.toString()}');
     }
   }
@@ -292,6 +406,10 @@ class ApiService {
     String? token,
   }) async {
     try {
+      debugPrint('✅ ApiService.submitApproval()');
+      debugPrint('   Document: $documentNumber');
+      debugPrint('   Status: $status');
+
       // ========== MOCK RESPONSE (UNTUK TESTING) ==========
       await Future.delayed(const Duration(seconds: 2));
 
@@ -337,6 +455,7 @@ class ApiService {
       return ApprovalResponse.fromJson(data);
       */
     } catch (e) {
+      debugPrint('❌ Error: $e');
       return ApprovalResponse(
         success: false,
         message: 'Gagal submit approval: ${e.toString()}',
@@ -344,3 +463,14 @@ class ApiService {
     }
   }
 }
+
+/*
+// User ID validation
+- Tidak boleh kosong
+- Minimal 3 karakter
+- Hanya boleh huruf, angka, underscore
+
+// Password validation
+- Tidak boleh kosong
+- Minimal 6 karakter
+ */
