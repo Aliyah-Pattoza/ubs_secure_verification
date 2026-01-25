@@ -5,6 +5,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../controllers/transaction_controller.dart';
+import '../../widgets/vpn_status_widget.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -18,8 +19,8 @@ class _TransactionListScreenState extends State<TransactionListScreen>
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _selectedFilter = 'all'; // all, pending, high_value
-  bool _isTableView = false; // Toggle antara Card dan Table view
+  String _selectedFilter = 'all';
+  bool _isTableView = false;
 
   @override
   void initState() {
@@ -36,7 +37,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
 
   List<TransactionModel> _getFilteredTransactions(List<TransactionModel> transactions) {
     var filtered = transactions.where((t) {
-      // Search filter
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final matchesTitle = t.title.toLowerCase().contains(query);
@@ -47,7 +47,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         }
       }
 
-      // Status filter
       if (_selectedFilter == 'pending' && t.status != 'pending') {
         return false;
       }
@@ -63,7 +62,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Initialize controller
     final controller = Get.put(TransactionController());
 
     return Scaffold(
@@ -71,7 +69,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Header dengan VPN Status
             _buildHeader(controller),
 
             // Search & Filter Bar
@@ -125,97 +123,109 @@ class _TransactionListScreenState extends State<TransactionListScreen>
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          // Logo UBS
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Text(
-              'UBS',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-
-          // User Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome back,',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textMuted.withOpacity(0.8),
-                  ),
-                ),
-                Text(
-                  controller.user?.name ?? 'User',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Notification Badge
-          Stack(
+          Row(
             children: [
-              IconButton(
-                onPressed: () {
-                  Get.snackbar(
-                    'Notifications',
-                    'You have ${controller.transactions.length} pending transactions',
-                    snackPosition: SnackPosition.TOP,
-                    backgroundColor: AppColors.primary,
-                    colorText: Colors.white,
-                  );
-                },
-                icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
-              ),
-              Obx(() => controller.transactions.isNotEmpty
-                  ? Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
+              // Logo UBS
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
                   ),
-                  child: Text(
-                    '${controller.transactions.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'UBS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
                 ),
-              )
-                  : const SizedBox()),
+              ),
+              const SizedBox(width: 14),
+
+              // User Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back,',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted.withOpacity(0.8),
+                      ),
+                    ),
+                    Text(
+                      controller.user?.name ?? 'User',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // VPN Status Badge
+              const VpnStatusBadge(showDetails: true),
+              const SizedBox(width: 8),
+
+              // Notification Badge
+              Stack(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      Get.snackbar(
+                        'Notifications',
+                        'You have ${controller.transactions.length} pending transactions',
+                        snackPosition: SnackPosition.TOP,
+                        backgroundColor: AppColors.primary,
+                        colorText: Colors.white,
+                      );
+                    },
+                    icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
+                  ),
+                  Obx(() => controller.transactions.isNotEmpty
+                      ? Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${controller.transactions.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  )
+                      : const SizedBox()),
+                ],
+              ),
+
+              // Logout
+              IconButton(
+                onPressed: controller.logout,
+                icon: const Icon(Icons.logout_rounded, color: AppColors.textMuted),
+                tooltip: 'Logout',
+              ),
             ],
           ),
 
-          // Logout
-          IconButton(
-            onPressed: controller.logout,
-            icon: const Icon(Icons.logout_rounded, color: AppColors.textMuted),
-            tooltip: 'Logout',
-          ),
+          // Security Indicator Bar
+          const SizedBox(height: 12),
+          const SecurityIndicator(),
         ],
       ),
     );
@@ -226,7 +236,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
-          // Search Field
           Expanded(
             child: Container(
               height: 48,
@@ -270,8 +279,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
             ),
           ),
           const SizedBox(width: 12),
-
-          // Filter Dropdown
           Container(
             height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -315,7 +322,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
-            // Total Transactions
             Expanded(
               child: _buildStatCard(
                 icon: Icons.receipt_long_rounded,
@@ -326,8 +332,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               ),
             ),
             const SizedBox(width: 12),
-
-            // Total Amount
             Expanded(
               child: _buildStatCard(
                 icon: Icons.account_balance_wallet_rounded,
@@ -338,8 +342,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               ),
             ),
             const SizedBox(width: 12),
-
-            // High Value
             Expanded(
               child: _buildStatCard(
                 icon: Icons.trending_up_rounded,
@@ -435,7 +437,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
           ),
           Row(
             children: [
-              // Refresh Button
               IconButton(
                 onPressed: controller.loadTransactions,
                 icon: const Icon(Icons.refresh_rounded),
@@ -443,8 +444,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 tooltip: 'Refresh',
               ),
               const SizedBox(width: 4),
-
-              // View Toggle
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -609,10 +608,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  // ================================
-  // DATA TABLE VIEW
-  // ================================
-
   Widget _buildDataTable(TransactionController controller, List<TransactionModel> transactions) {
     return RefreshIndicator(
       onRefresh: controller.refreshTransactions,
@@ -670,19 +665,13 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     DataCell(
                       Text(
                         transaction.documentNumber,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                        ),
+                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
                       ),
                     ),
                     DataCell(
                       SizedBox(
                         width: 150,
-                        child: Text(
-                          transaction.title,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: Text(transaction.title, overflow: TextOverflow.ellipsis),
                       ),
                     ),
                     DataCell(
@@ -707,10 +696,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         ),
                         child: Text(
                           transaction.department!,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.primary,
-                          ),
+                          style: const TextStyle(fontSize: 11, color: AppColors.primary),
                         ),
                       )
                           : const Text('-'),
@@ -731,21 +717,18 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Accept Button
         IconButton(
           onPressed: () => controller.handleApproval(transaction, 'accept'),
           icon: const Icon(Icons.check_circle_rounded, color: AppColors.success),
           tooltip: 'Accept',
           iconSize: 24,
         ),
-        // Reject Button
         IconButton(
           onPressed: () => controller.handleApproval(transaction, 'reject'),
           icon: const Icon(Icons.cancel_rounded, color: AppColors.error),
           tooltip: 'Reject',
           iconSize: 24,
         ),
-        // Detail Button
         IconButton(
           onPressed: () => _showTransactionDetail(transaction, controller),
           icon: Icon(Icons.info_outline_rounded, color: AppColors.primary.withOpacity(0.7)),
@@ -756,10 +739,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  // ================================
-  // CARD LIST VIEW
-  // ================================
-
   Widget _buildTransactionList(TransactionController controller, List<TransactionModel> transactions) {
     return RefreshIndicator(
       onRefresh: controller.refreshTransactions,
@@ -768,11 +747,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: transactions.length,
         itemBuilder: (context, index) {
-          return _buildTransactionCard(
-            controller,
-            transactions[index],
-            index + 1,
-          );
+          return _buildTransactionCard(controller, transactions[index], index + 1);
         },
       ),
     );
@@ -805,7 +780,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         ),
         child: Column(
           children: [
-            // High Value Badge
             if (isHighValue)
               Container(
                 width: double.infinity,
@@ -831,14 +805,11 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   ],
                 ),
               ),
-
-            // Card Content
             Padding(
               padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   Row(
                     children: [
                       Container(
@@ -883,7 +854,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                           ],
                         ),
                       ),
-                      // Status Badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
@@ -902,8 +872,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Title
                   Text(
                     transaction.title,
                     style: const TextStyle(
@@ -913,8 +881,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Amount
                   Text(
                     transaction.formattedAmount,
                     style: TextStyle(
@@ -923,8 +889,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                       color: isHighValue ? AppColors.error : AppColors.goldDark,
                     ),
                   ),
-
-                  // Requester info
                   if (transaction.requesterName != null) ...[
                     const SizedBox(height: 14),
                     Container(
@@ -976,8 +940,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     ),
                   ],
                   const SizedBox(height: 18),
-
-                  // Action Buttons
                   Row(
                     children: [
                       Expanded(
@@ -1028,10 +990,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  // ================================
-  // TRANSACTION DETAIL BOTTOM SHEET
-  // ================================
-
   void _showTransactionDetail(TransactionModel transaction, TransactionController controller) {
     Get.bottomSheet(
       Container(
@@ -1043,7 +1001,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle Bar
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 width: 40,
@@ -1053,13 +1010,11 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header
                     Row(
                       children: [
                         Container(
@@ -1103,12 +1058,9 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 24),
                     const Divider(),
                     const SizedBox(height: 16),
-
-                    // Details
                     _buildDetailRow('Title', transaction.title),
                     _buildDetailRow('Amount', transaction.formattedAmount, isAmount: true),
                     _buildDetailRow('Requester', transaction.requesterName ?? '-'),
@@ -1116,10 +1068,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     _buildDetailRow('Created Date', transaction.formattedDate),
                     _buildDetailRow('Status', transaction.status.toUpperCase(),
                         statusColor: AppColors.warning),
-
                     const SizedBox(height: 24),
-
-                    // Action Buttons
                     Row(
                       children: [
                         Expanded(
@@ -1165,7 +1114,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 16),
                   ],
                 ),
