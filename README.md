@@ -1,41 +1,21 @@
-# UBS Gold Secure Verification App
-
-[![Flutter Version](https://img.shields.io/badge/Flutter-3.0+-blue.svg)](https://flutter.dev/)
-[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-
-A secure mobile application for transaction approval with multi-layer authentication including Face Recognition and VPN encryption.
-
-## 📱 Overview
-
-UBS Gold Secure Verification App adalah aplikasi mobile yang dirancang khusus untuk memberikan keamanan maksimal dalam proses verifikasi dan persetujuan transaksi keuangan. Aplikasi ini menggunakan teknologi Face Recognition dan koneksi VPN untuk memastikan setiap transaksi diverifikasi oleh pihak yang berwenang.
-
-## 🏗️ Architecture
-
-```
-Mobile App (Flutter)
-    ↓
-VPN Server (WireGuard/MikroTik)
-    ↓
-Backend APIs (LAN)
-    ├── Face Recognition API
-    ├── Transaction Service
-    └── Auth Service
-```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-
 - Flutter SDK 3.0+
 - Dart 2.19+
 - Android Studio / Xcode
 - Device dengan kamera untuk Face Recognition
 
+### Installation
+1. Clone repository ini
+2. Install dependencies: `flutter pub get`
+3. Run aplikasi: `flutter run`
 
 ## 🔧 Configuration
 
 ### 1. DeviceID Registration
-Setiap device yang akan menggunakan aplikasi harus didaftarkan DeviceID-nya ke sistem:
+Setiap device yang akan menggunakan aplikasi harus didaftarkan DeviceID-nya ke sistem.
 
 ### 2. VPN Configuration
 WireGuard client akan otomatis terkonfigurasi saat login pertama kali. Pastikan VPN server sudah running.
@@ -98,9 +78,9 @@ This project is proprietary software owned by UBS Gold. Unauthorized copying, di
 
 *Trust in Gold*
 
-# ubs_secure_verification
+---
 
-A new Flutter project.
+# ubs_secure_verification
 
 ## Getting Started
 
@@ -114,4 +94,3 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
-
