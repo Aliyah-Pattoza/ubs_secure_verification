@@ -34,7 +34,7 @@ Backend APIs (LAN)
 
 ## 🔧 Configuration
 
-### 1. IMEI Registration
+### 1. DeviceID Registration
 Setiap device yang akan menggunakan aplikasi harus didaftarkan DeviceID-nya ke sistem:
 
 ### 2. VPN Configuration
@@ -48,7 +48,7 @@ WireGuard client akan otomatis terkonfigurasi saat login pertama kali. Pastikan 
 ## 📱 User Flow
 
 1. **Splash Screen** → Loading & sistem check
-2. **Login** → User ID + Password + IMEI verification
+2. **Login** → User ID + Password + DeviceID verification
 3. **Face Verification** → Biometric authentication
 4. **Dashboard** → View pending transactions
 5. **Action** → Accept/Reject transaction
@@ -76,18 +76,6 @@ WireGuard client akan otomatis terkonfigurasi saat login pertama kali. Pastikan 
 | Transaction List | Approval | Success |
 |-----------------|----------|---------|
 | ![List](screenshots/transaction_list.png) | ![Approve](screenshots/approve.png) | ![Success](screenshots/success.png) |
-
-## 🧪 Testing
-
-Run unit tests:
-```bash
-flutter test
-```
-
-Run integration tests:
-```bash
-flutter test integration_test
-```
 
 ## 🚦 Project Status
 
