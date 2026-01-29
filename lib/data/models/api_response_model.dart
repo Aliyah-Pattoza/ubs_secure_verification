@@ -44,12 +44,27 @@ class FaceRecognitionResponse {
   });
 
   factory FaceRecognitionResponse.fromJson(Map<String, dynamic> json) {
+    // Handle Beeceptor API response format
+    // Response is an array with first element containing the data
+    if (json is List && json.isNotEmpty) {
+      final data = json[0] as Map<String, dynamic>;
+      return FaceRecognitionResponse(
+        success: data['success'] ?? false,
+        message: data['message'] ?? '-',
+        confidence: data['conf'] != null ? double.tryParse(data['conf'].toString()) : null,
+        isMatch: data['success'] ?? false,
+        userId: data['induk'] ?? data['rfid'],
+      );
+    }
+    
+    // Handle standard API response format
     return FaceRecognitionResponse(
       success: json['success'] ?? false,
       message: json['message'],
-      confidence: json['confidence']?.toDouble(),
-      isMatch: json['is_match'] ?? json['match'],
-      userId: json['user_id'],
+      confidence: json['confidence']?.toDouble() ?? 
+                  (json['conf'] != null ? double.tryParse(json['conf'].toString()) : null),
+      isMatch: json['is_match'] ?? json['match'] ?? json['success'] ?? false,
+      userId: json['user_id'] ?? json['induk'] ?? json['rfid'],
     );
   }
 }

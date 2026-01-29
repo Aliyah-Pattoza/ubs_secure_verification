@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/vpn_service.dart';
 import '../../../core/utils/device_helper.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -142,11 +144,47 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       debugPrint('📨 Response: ${response.success} - ${response.message}');
 
       if (response.success && response.user != null) {
-        // Login berhasil
+        // Login berhasil dan IMEI cocok
         debugPrint('✅ Login successful!');
         debugPrint('👤 User: ${response.user!.name}');
+        debugPrint('📱 IMEI matched: $_deviceId');
 
         _showSuccessSnackbar('Login berhasil! Selamat datang, ${response.user!.name}');
+
+        // ============================================
+        // AUTO-CONNECT VPN SETELAH IMEI COCOK
+        // ============================================
+        debugPrint('🔐 Connecting VPN after IMEI verification...');
+        try {
+          final vpnService = Get.put(VpnService());
+          await vpnService.init();
+          
+          // Parse VPN config dari response jika ada
+          VpnConfig? vpnConfig;
+          if (response.vpnConfig != null) {
+            try {
+              final configJson = jsonDecode(response.vpnConfig!);
+              vpnConfig = VpnConfig.fromJson(configJson);
+            } catch (e) {
+              debugPrint('⚠️ Failed to parse VPN config, using default');
+              vpnConfig = VpnConfig.ubsDefault();
+            }
+          } else {
+            vpnConfig = VpnConfig.ubsDefault();
+          }
+
+          // Connect VPN
+          final vpnConnected = await vpnService.connect(config: vpnConfig);
+          if (vpnConnected) {
+            debugPrint('✅ VPN Connected successfully!');
+            _showSuccessSnackbar('VPN terhubung');
+          } else {
+            debugPrint('⚠️ VPN connection failed, but continuing...');
+          }
+        } catch (e) {
+          debugPrint('❌ VPN connection error: $e');
+          // Continue even if VPN fails
+        }
 
         // Tunggu sebentar agar snackbar terlihat
         await Future.delayed(const Duration(milliseconds: 800));

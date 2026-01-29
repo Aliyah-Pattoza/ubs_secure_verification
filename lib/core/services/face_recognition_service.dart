@@ -183,11 +183,24 @@ class FaceRecognitionService {
   }
 
   /// Test Face Recognition dengan Beeceptor API
+  /// API ini mengembalikan array dengan format:
+  /// [{
+  ///   "conf": "73.61",
+  ///   "duration": "0.4072",
+  ///   "induk": "012345",
+  ///   "message": "-",
+  ///   "nama": "PIPIT RAHAYU",
+  ///   "rfid": "0123456789",
+  ///   "success": true,
+  ///   "uuid": "06902b6d-f123-707z-456-29cb946xx652"
+  /// }]
   static Future<FaceRecognitionResponse> testWithBeeceptor({
     required String base64Image,
   }) async {
     try {
       debugPrint('🧪 Testing with Beeceptor API...');
+      debugPrint('   URL: $_testFrUrl');
+      debugPrint('   Image size: ${base64Image.length} chars');
 
       final response = await http.post(
         Uri.parse(_testFrUrl),
@@ -203,11 +216,37 @@ class FaceRecognitionService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return FaceRecognitionResponse.fromJson(data);
+        
+        // Beeceptor API returns an array
+        if (data is List && data.isNotEmpty) {
+          final result = data[0] as Map<String, dynamic>;
+          debugPrint('   ✅ Face recognized: ${result['nama']}');
+          debugPrint('   📊 Confidence: ${result['conf']}%');
+          debugPrint('   🆔 Induk/RFID: ${result['induk']}/${result['rfid']}');
+          
+          return FaceRecognitionResponse(
+            success: result['success'] ?? false,
+            message: result['message'] ?? result['nama'] ?? 'Wajah terverifikasi',
+            confidence: result['conf'] != null 
+                ? double.tryParse(result['conf'].toString()) ?? 0.0 
+                : 0.0,
+            isMatch: result['success'] ?? false,
+            userId: result['induk'] ?? result['rfid'],
+          );
+        } else {
+          return FaceRecognitionResponse(
+            success: false,
+            message: 'Tidak ada data wajah yang dikenali',
+            confidence: 0,
+            isMatch: false,
+          );
+        }
       } else {
         return FaceRecognitionResponse(
           success: false,
           message: 'Test API error: ${response.statusCode}',
+          confidence: 0,
+          isMatch: false,
         );
       }
     } catch (e) {
@@ -215,6 +254,8 @@ class FaceRecognitionService {
       return FaceRecognitionResponse(
         success: false,
         message: 'Gagal terhubung ke test API: ${e.toString()}',
+        confidence: 0,
+        isMatch: false,
       );
     }
   }

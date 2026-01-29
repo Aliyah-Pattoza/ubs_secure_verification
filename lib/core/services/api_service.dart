@@ -247,21 +247,19 @@ class ApiService {
   }) async {
     try {
       debugPrint('👤 ApiService.verifyFace()');
+      debugPrint('   User ID: $userId');
+      debugPrint('   NIK: $nik');
 
-      // ========== MOCK RESPONSE (UNTUK TESTING) ==========
-      await Future.delayed(const Duration(seconds: 2));
+      // Gunakan Beeceptor API untuk testing
+      // Untuk production, ganti dengan baseFrUrl
+      final useBeeceptor = true; // Set false untuk production API
+      
+      if (useBeeceptor) {
+        // Gunakan Beeceptor API untuk testing
+        return await testFaceRecognition(base64Image: base64Image);
+      }
 
-      return FaceRecognitionResponse(
-        success: true,
-        message: 'Wajah terverifikasi',
-        confidence: 0.95,
-        isMatch: true,
-        userId: userId,
-      );
-      // ========== END MOCK RESPONSE ==========
-
-      // ========== REAL API CALL ==========
-      /*
+      // ========== REAL API CALL (LAN) ==========
       final response = await http.post(
         Uri.parse('$baseFrUrl/api/face/verify'),
         headers: _headers,
@@ -272,44 +270,84 @@ class ApiService {
         }),
       ).timeout(timeoutDuration);
 
+      debugPrint('   Response status: ${response.statusCode}');
       final data = jsonDecode(response.body);
       return FaceRecognitionResponse.fromJson(data);
-      */
     } catch (e) {
       debugPrint('❌ Error: $e');
       return FaceRecognitionResponse(
         success: false,
         message: 'Gagal verifikasi wajah: ${e.toString()}',
+        confidence: 0,
+        isMatch: false,
       );
     }
   }
 
   /// Test Face Recognition dengan Beeceptor API
+  /// Menggunakan API Beeceptor untuk testing
   static Future<FaceRecognitionResponse> testFaceRecognition({
     required String base64Image,
   }) async {
     try {
+      debugPrint('🧪 ApiService.testFaceRecognition()');
+      debugPrint('   Using Beeceptor API: $testFrUrl');
+
       final response = await http
           .post(
         Uri.parse(testFrUrl),
         headers: _headers,
-        body: jsonEncode({'image': base64Image}),
+        body: jsonEncode({
+          'image': base64Image,
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
       )
           .timeout(timeoutDuration);
 
+      debugPrint('   Response status: ${response.statusCode}');
+      debugPrint('   Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return FaceRecognitionResponse.fromJson(data);
+        
+        // Beeceptor API returns an array
+        if (data is List && data.isNotEmpty) {
+          final result = data[0] as Map<String, dynamic>;
+          debugPrint('   ✅ Face recognized: ${result['nama'] ?? 'Unknown'}');
+          debugPrint('   📊 Confidence: ${result['conf'] ?? '0'}%');
+          
+          return FaceRecognitionResponse(
+            success: result['success'] ?? false,
+            message: result['message'] ?? result['nama'] ?? 'Wajah terverifikasi',
+            confidence: result['conf'] != null 
+                ? double.tryParse(result['conf'].toString()) ?? 0.0 
+                : 0.0,
+            isMatch: result['success'] ?? false,
+            userId: result['induk'] ?? result['rfid'],
+          );
+        } else {
+          return FaceRecognitionResponse(
+            success: false,
+            message: 'Tidak ada data wajah yang dikenali',
+            confidence: 0,
+            isMatch: false,
+          );
+        }
       } else {
         return FaceRecognitionResponse(
           success: false,
           message: 'Error: ${response.statusCode}',
+          confidence: 0,
+          isMatch: false,
         );
       }
     } catch (e) {
+      debugPrint('❌ Test error: $e');
       return FaceRecognitionResponse(
         success: false,
         message: 'Gagal terhubung ke API test: ${e.toString()}',
+        confidence: 0,
+        isMatch: false,
       );
     }
   }
@@ -424,8 +462,9 @@ class ApiService {
       // ========== END MOCK RESPONSE ==========
 
       // ========== REAL API CALL ==========
+      // Uncomment untuk production
       /*
-      // Step 1: Verify face first
+      // Step 1: Verify face first dengan API Face Recognition
       final faceResponse = await verifyFace(
         base64Image: base64Image,
         userId: userId,
@@ -439,20 +478,29 @@ class ApiService {
         );
       }
 
-      // Step 2: Submit approval
+      // Step 2: Submit approval ke API LAN
       final response = await http.post(
         Uri.parse('$baseApprovalUrl/api/transactions/approve'),
         headers: token != null ? _authHeaders(token) : _headers,
         body: jsonEncode({
           'document_number': documentNumber,
-          'status': status,
+          'status': status, // 'accepted' atau 'rejected'
           'user_id': userId,
           'face_verified': true,
+          'face_image': base64Image, // Kirim juga image untuk audit
+          'confidence': faceResponse.confidence,
         }),
       ).timeout(timeoutDuration);
 
-      final data = jsonDecode(response.body);
-      return ApprovalResponse.fromJson(data);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return ApprovalResponse.fromJson(data);
+      } else {
+        return ApprovalResponse(
+          success: false,
+          message: 'Gagal submit approval: ${response.statusCode}',
+        );
+      }
       */
     } catch (e) {
       debugPrint('❌ Error: $e');
