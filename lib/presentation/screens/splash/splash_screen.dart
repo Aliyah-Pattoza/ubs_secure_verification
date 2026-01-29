@@ -54,12 +54,16 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final screenHeight = size.height;
+
+    // Responsive sizing based on screen height
+    final isSmallScreen = screenHeight < 700;
 
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        color: const Color(0xFF1A2D42), // Base navy color
+        color: const Color(0xFF1A2D42),
         child: Stack(
           children: [
             // Background wave pattern
@@ -68,7 +72,7 @@ class _SplashScreenState extends State<SplashScreen>
               painter: UBSWaveBackgroundPainter(),
             ),
 
-            // Main Content
+            // Main Content - wrapped in SingleChildScrollView for safety
             SafeArea(
               child: AnimatedBuilder(
                 animation: _animationController,
@@ -81,23 +85,29 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   );
                 },
-                child: Column(
-                  children: [
-                    const Spacer(flex: 2),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: isSmallScreen ? 16 : 24,
+                  ),
+                  child: Column(
+                    children: [
+                      const Spacer(flex: 1),
 
-                    // Logo UBS dari image asset
-                    _buildLogo(),
+                      // Logo UBS Gold
+                      _buildLogo(isSmallScreen),
 
-                    const Spacer(flex: 2),
+                      const Spacer(flex: 1),
 
-                    // Gold Bar (lebih besar)
-                    _buildGoldBar(),
+                      // Gold Bar
+                      _buildGoldBar(isSmallScreen),
 
-                    const Spacer(flex: 3),
+                      const Spacer(flex: 1),
 
-                    // Bottom Section
-                    _buildBottomSection(),
-                  ],
+                      // Bottom Section
+                      _buildBottomSection(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -107,103 +117,112 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  /// Logo UBS Gold - menggunakan image asset
-  Widget _buildLogo() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Image.asset(
-        'assets/images/ubs_logo_gold.png',
-        height: 100,
-        fit: BoxFit.contain,
-      ),
+  /// Logo UBS Gold - responsive
+  Widget _buildLogo(bool isSmallScreen) {
+    return Image.asset(
+      'assets/images/ubs_logo_gold.png',
+      height: isSmallScreen ? 100 : 130,
+      fit: BoxFit.contain,
     );
   }
 
-  /// Gold Bar - lebih besar dengan logo image (FIXED VERSION)
-  Widget _buildGoldBar() {
+  /// Gold Bar - responsive sizing
+  Widget _buildGoldBar(bool isSmallScreen) {
+    final barWidth = isSmallScreen ? 170.0 : 200.0;
+    final barHeight = isSmallScreen ? 240.0 : 300.0;
+
     return Container(
-      width: 130,
-      height: 180,
+      width: barWidth,
+      height: barHeight,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFE8D54E), // Bright gold
-            Color(0xFFD4B93C), // Medium gold
-            Color(0xFFC9A227), // Dark gold
-            Color(0xFFD4B93C), // Medium gold
+            Color(0xFFEFDC5A),
+            Color(0xFFE8D54E),
+            Color(0xFFD4B93C),
+            Color(0xFFC9A227),
+            Color(0xFFD4B93C),
           ],
-          stops: [0.0, 0.3, 0.7, 1.0],
+          stops: [0.0, 0.2, 0.5, 0.8, 1.0],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFD4B93C).withOpacity(0.5),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
+            color: const Color(0xFFD4B93C).withOpacity(0.6),
+            blurRadius: 40,
+            offset: const Offset(0, 18),
           ),
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(8), // Reduced from 12 to 8
+        padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // Logo UBS dari image (kecil)
+            // Logo UBS
             Image.asset(
-              'assets/images/ubs_logo_gold.png',
-              height: 30, // Reduced from 40 to 30
+              'assets/images/ubs_logo.png',
+              height: isSmallScreen ? 50 : 65,
               fit: BoxFit.contain,
-              color: const Color(0xFF5C4827), // Warna gelap untuk kontras
+              color: const Color(0xFF5C4827),
               colorBlendMode: BlendMode.srcIn,
             ),
-            const SizedBox(height: 4), // Reduced from 6 to 4
+
+            // Trust in Gold
             Text(
               'Trust in Gold',
               style: TextStyle(
-                fontSize: 6, // Reduced from 7 to 6
+                fontSize: isSmallScreen ? 10 : 12,
                 fontStyle: FontStyle.italic,
-                color: const Color(0xFF5C4827).withOpacity(0.7),
+                color: const Color(0xFF5C4827).withOpacity(0.8),
               ),
             ),
-            const SizedBox(height: 8), // Reduced from 14 to 8
-            const Text(
+
+            // 1 Gr.
+            Text(
               '1 Gr.',
               style: TextStyle(
-                fontSize: 22, // Reduced from 24 to 22
+                fontSize: isSmallScreen ? 36 : 44,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF5C4827),
+                color: const Color(0xFF5C4827),
               ),
             ),
-            const SizedBox(height: 4), // Reduced from 6 to 4
-            const Text(
+
+            // FINE GOLD
+            Text(
               'FINE GOLD',
               style: TextStyle(
-                fontSize: 9, // Reduced from 10 to 9
+                fontSize: isSmallScreen ? 14 : 16,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF5C4827),
-                letterSpacing: 1.5, // Reduced from 2 to 1.5
+                color: const Color(0xFF5C4827),
+                letterSpacing: 3,
               ),
             ),
-            const SizedBox(height: 4), // Reduced from 6 to 4
+
+            // Divider line
             Container(
-              width: 40, // Reduced from 50 to 40
-              height: 1,
-              color: const Color(0xFF8B7355).withOpacity(0.5),
+              width: isSmallScreen ? 60 : 80,
+              height: 2,
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B7355).withOpacity(0.6),
+                borderRadius: BorderRadius.circular(1),
+              ),
             ),
-            const SizedBox(height: 4), // Reduced from 6 to 4
-            const Text(
+
+            // 999.9
+            Text(
               '999.9',
               style: TextStyle(
-                fontSize: 13, // Reduced from 14 to 13
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF5C4827),
+                fontSize: isSmallScreen ? 20 : 24,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF5C4827),
               ),
             ),
           ],
@@ -214,17 +233,14 @@ class _SplashScreenState extends State<SplashScreen>
 
   /// Bottom Section
   Widget _buildBottomSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildSecurityBadge(),
-          const SizedBox(height: 20),
-          _buildContinueButton(),
-          const SizedBox(height: 32),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildSecurityBadge(),
+        const SizedBox(height: 20),
+        _buildContinueButton(),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
@@ -299,7 +315,6 @@ class _SplashScreenState extends State<SplashScreen>
 class UBSWaveBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // Wave colors (rose gold / peach tones)
     final waveColor1 = const Color(0xFFD4A574).withOpacity(0.15);
     final waveColor2 = const Color(0xFFB8917A).withOpacity(0.12);
     final waveColor3 = const Color(0xFFD4A574).withOpacity(0.08);
