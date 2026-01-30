@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../config/vpn_config.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/vpn_service.dart';
 import '../../../core/utils/device_helper.dart';
@@ -14,7 +15,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _userIdController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -149,7 +151,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         debugPrint('👤 User: ${response.user!.name}');
         debugPrint('📱 IMEI matched: $_deviceId');
 
-        _showSuccessSnackbar('Login berhasil! Selamat datang, ${response.user!.name}');
+        _showSuccessSnackbar(
+          'Login berhasil! Selamat datang, ${response.user!.name}',
+        );
 
         // ============================================
         // AUTO-CONNECT VPN SETELAH IMEI COCOK
@@ -158,19 +162,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         try {
           final vpnService = Get.put(VpnService());
           await vpnService.init();
-          
-          // Parse VPN config dari response jika ada
+
+          // Config: dari API (vpn_config) atau dari konfigurasi terpusat (lib/config/vpn_config.dart)
           VpnConfig? vpnConfig;
-          if (response.vpnConfig != null) {
+          if (response.vpnConfig != null && response.vpnConfig!.isNotEmpty) {
             try {
               final configJson = jsonDecode(response.vpnConfig!);
               vpnConfig = VpnConfig.fromJson(configJson);
             } catch (e) {
-              debugPrint('⚠️ Failed to parse VPN config, using default');
-              vpnConfig = VpnConfig.ubsDefault();
+              debugPrint(
+                '⚠️ Failed to parse VPN config, using activeVpnConfig',
+              );
+              vpnConfig = activeVpnConfig;
             }
           } else {
-            vpnConfig = VpnConfig.ubsDefault();
+            vpnConfig = activeVpnConfig;
           }
 
           // Connect VPN
@@ -232,10 +238,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     if (lowerMessage.contains('password')) {
       return 'Password salah. Silakan coba lagi.';
     }
-    if (lowerMessage.contains('user') || lowerMessage.contains('tidak ditemukan')) {
+    if (lowerMessage.contains('user') ||
+        lowerMessage.contains('tidak ditemukan')) {
       return 'User ID tidak ditemukan. Periksa kembali User ID Anda.';
     }
-    if (lowerMessage.contains('blocked') || lowerMessage.contains('suspended')) {
+    if (lowerMessage.contains('blocked') ||
+        lowerMessage.contains('suspended')) {
       return 'Akun Anda diblokir. Hubungi admin untuk informasi lebih lanjut.';
     }
 
@@ -324,10 +332,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                AppColors.primary,
-                AppColors.primary.withOpacity(0.8),
-              ],
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -462,7 +467,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   : 'Getting device info...',
               style: TextStyle(
                 fontSize: 12,
-                color: _deviceId != null ? AppColors.success : AppColors.warning,
+                color: _deviceId != null
+                    ? AppColors.success
+                    : AppColors.warning,
                 fontWeight: FontWeight.w500,
               ),
               overflow: TextOverflow.ellipsis,
@@ -565,11 +572,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       size: 22,
                     ),
                   ),
-                  onPressed: _isLoading ? null : () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
                 ),
               ),
               validator: _validatePassword,
@@ -582,10 +591,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   InputDecoration _inputDecoration(
-      String hint,
-      IconData icon, {
-        Widget? suffixIcon,
-      }) {
+    String hint,
+    IconData icon, {
+    Widget? suffixIcon,
+  }) {
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(
@@ -704,37 +713,37 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           duration: const Duration(milliseconds: 200),
           child: _isLoading
               ? Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.primaryDark.withOpacity(0.7),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primaryDark.withOpacity(0.7),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Signing in...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryDark.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                )
+              : const Text(
+                  'Login',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Signing in...',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryDark.withOpacity(0.7),
-                ),
-              ),
-            ],
-          )
-              : const Text(
-            'Login',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
         ),
       ),
     );
@@ -743,22 +752,26 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Widget _buildForgotPassword() {
     return Center(
       child: TextButton(
-        onPressed: _isLoading ? null : () {
-          Get.snackbar(
-            'Info',
-            'Hubungi admin untuk reset password',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: AppColors.primary,
-            colorText: Colors.white,
-            margin: const EdgeInsets.all(16),
-            borderRadius: 12,
-            icon: const Icon(Icons.info_outline, color: Colors.white),
-          );
-        },
+        onPressed: _isLoading
+            ? null
+            : () {
+                Get.snackbar(
+                  'Info',
+                  'Hubungi admin untuk reset password',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: AppColors.primary,
+                  colorText: Colors.white,
+                  margin: const EdgeInsets.all(16),
+                  borderRadius: 12,
+                  icon: const Icon(Icons.info_outline, color: Colors.white),
+                );
+              },
         child: Text(
           'Forgot Password?',
           style: TextStyle(
-            color: _isLoading ? AppColors.textMuted.withOpacity(0.5) : AppColors.textMuted,
+            color: _isLoading
+                ? AppColors.textMuted.withOpacity(0.5)
+                : AppColors.textMuted,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),

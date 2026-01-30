@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
-import '../../../app/routes/app_routes.dart';
-import '../../../data/models/user_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../controllers/transaction_controller.dart';
 import '../../widgets/vpn_status_widget.dart';
@@ -35,13 +33,16 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     super.dispose();
   }
 
-  List<TransactionModel> _getFilteredTransactions(List<TransactionModel> transactions) {
+  List<TransactionModel> _getFilteredTransactions(
+    List<TransactionModel> transactions,
+  ) {
     var filtered = transactions.where((t) {
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final matchesTitle = t.title.toLowerCase().contains(query);
         final matchesDoc = t.documentNumber.toLowerCase().contains(query);
-        final matchesRequester = t.requesterName?.toLowerCase().contains(query) ?? false;
+        final matchesRequester =
+            t.requesterName?.toLowerCase().contains(query) ?? false;
         if (!matchesTitle && !matchesDoc && !matchesRequester) {
           return false;
         }
@@ -91,7 +92,9 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   return _buildError(controller);
                 }
 
-                final filteredTransactions = _getFilteredTransactions(controller.transactions);
+                final filteredTransactions = _getFilteredTransactions(
+                  controller.transactions,
+                );
 
                 if (filteredTransactions.isEmpty) {
                   return _buildEmpty();
@@ -100,7 +103,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 if (_isTableView) {
                   return _buildDataTable(controller, filteredTransactions);
                 } else {
-                  return _buildTransactionList(controller, filteredTransactions);
+                  return _buildTransactionList(
+                    controller,
+                    filteredTransactions,
+                  );
                 }
               }),
             ),
@@ -112,7 +118,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
 
   Widget _buildHeader(TransactionController controller) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -124,125 +130,166 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // Baris 1: Logo + User + Actions (compact)
           Row(
             children: [
-              // Logo UBS
+              // Logo UBS (lebih compact)
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primary.withOpacity(0.8),
+                    ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Text(
                   'UBS',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
 
-              // User Info
+              // User Info (Expanded agar fleksibel)
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Welcome back,',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: AppColors.textMuted.withOpacity(0.8),
                       ),
                     ),
                     Text(
                       controller.user?.name ?? 'User',
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ],
                 ),
               ),
 
-              // VPN Status Badge
-              const VpnStatusBadge(showDetails: true),
-              const SizedBox(width: 8),
-
-              // Notification Badge
-              Stack(
+              // Actions (lebih compact)
+              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      Get.snackbar(
-                        'Notifications',
-                        'You have ${controller.transactions.length} pending transactions',
-                        snackPosition: SnackPosition.TOP,
-                        backgroundColor: AppColors.primary,
-                        colorText: Colors.white,
-                      );
-                    },
-                    icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
-                  ),
-                  Obx(() => controller.transactions.isNotEmpty
-                      ? Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.error,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '${controller.transactions.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  )
-                      : const SizedBox()),
-                ],
-              ),
+                  // Notification Badge (compact)
+                  _buildNotificationButton(controller),
+                  const SizedBox(width: 2),
 
-              // Logout
-              IconButton(
-                onPressed: controller.logout,
-                icon: const Icon(Icons.logout_rounded, color: AppColors.textMuted),
-                tooltip: 'Logout',
+                  // Logout Button (compact)
+                  IconButton(
+                    onPressed: controller.logout,
+                    icon: const Icon(Icons.logout_rounded, size: 20),
+                    color: AppColors.textMuted,
+                    tooltip: 'Logout',
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               ),
             ],
           ),
 
-          // Security Indicator Bar
+          // Baris 2: VPN Status + Security Indicator
           const SizedBox(height: 12),
-          const SecurityIndicator(),
+          Row(
+            children: [
+              const VpnStatusBadge(showDetails: true),
+              const SizedBox(width: 12),
+              const Expanded(child: SecurityIndicator()),
+            ],
+          ),
         ],
       ),
     );
   }
 
+  Widget _buildNotificationButton(TransactionController controller) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          onPressed: () {
+            Get.snackbar(
+              'Notifications',
+              'You have ${controller.transactions.length} pending transactions',
+              snackPosition: SnackPosition.TOP,
+              backgroundColor: AppColors.primary,
+              colorText: Colors.white,
+            );
+          },
+          icon: const Icon(Icons.notifications_outlined, size: 20),
+          color: AppColors.primary,
+          tooltip: 'Notifications',
+          padding: const EdgeInsets.all(8),
+          constraints: const BoxConstraints(),
+        ),
+        Obx(() {
+          if (controller.transactions.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return Positioned(
+            right: 4,
+            top: 4,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              decoration: const BoxDecoration(
+                color: AppColors.error,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '${controller.transactions.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
   Widget _buildSearchAndFilter(TransactionController controller) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              height: 48,
+              height: 44,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.textMuted.withOpacity(0.15)),
+                border: Border.all(
+                  color: AppColors.textMuted.withOpacity(0.15),
+                ),
               ),
               child: TextField(
                 controller: _searchController,
@@ -252,36 +299,38 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   });
                 },
                 decoration: InputDecoration(
-                  hintText: 'Search transactions...',
+                  hintText: 'Search trans...',
                   hintStyle: TextStyle(
                     color: AppColors.textMuted.withOpacity(0.6),
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                   prefixIcon: Icon(
                     Icons.search_rounded,
                     color: AppColors.textMuted.withOpacity(0.6),
+                    size: 20,
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {
-                        _searchQuery = '';
-                      });
-                    },
-                    icon: const Icon(Icons.clear, size: 20),
-                  )
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                          icon: const Icon(Icons.clear, size: 18),
+                          padding: EdgeInsets.zero,
+                        )
                       : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -290,11 +339,18 @@ class _TransactionListScreenState extends State<TransactionListScreen>
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _selectedFilter,
-                icon: const Icon(Icons.filter_list_rounded, size: 20),
+                icon: const Icon(Icons.filter_list_rounded, size: 18),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textPrimary,
+                ),
                 items: const [
                   DropdownMenuItem(value: 'all', child: Text('All')),
                   DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                  DropdownMenuItem(value: 'high_value', child: Text('High Value')),
+                  DropdownMenuItem(
+                    value: 'high_value',
+                    child: Text('High Value'),
+                  ),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -314,15 +370,18 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       final transactions = controller.transactions;
       final totalAmount = transactions.fold<double>(
         0,
-            (sum, t) => sum + t.amount,
+        (sum, t) => sum + t.amount,
       );
-      final highValueCount = transactions.where((t) => t.amount >= 100000000).length;
+      final highValueCount = transactions
+          .where((t) => t.amount >= 100000000)
+          .length;
 
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
             Expanded(
+              flex: 1,
               child: _buildStatCard(
                 icon: Icons.receipt_long_rounded,
                 iconColor: AppColors.primary,
@@ -331,8 +390,9 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 subtitle: 'transactions',
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
+              flex: 1,
               child: _buildStatCard(
                 icon: Icons.account_balance_wallet_rounded,
                 iconColor: AppColors.gold,
@@ -341,8 +401,9 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 subtitle: 'total amount',
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
+              flex: 1,
               child: _buildStatCard(
                 icon: Icons.trending_up_rounded,
                 iconColor: AppColors.error,
@@ -365,7 +426,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     required String subtitle,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -383,38 +444,47 @@ class _TransactionListScreenState extends State<TransactionListScreen>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: iconColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(icon, size: 16, color: iconColor),
+                child: Icon(icon, size: 14, color: iconColor),
               ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textMuted.withOpacity(0.8),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted.withOpacity(0.8),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
             ),
           ),
+          const SizedBox(height: 2),
           Text(
             subtitle,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 9,
               color: AppColors.textMuted.withOpacity(0.7),
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -423,49 +493,49 @@ class _TransactionListScreenState extends State<TransactionListScreen>
 
   Widget _buildViewToggle(TransactionController controller) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Pending Approval',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+          const Expanded(
+            child: Text(
+              'Pending Approval',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
             ),
           ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: controller.loadTransactions,
-                icon: const Icon(Icons.refresh_rounded),
-                color: AppColors.gold,
-                tooltip: 'Refresh',
-              ),
-              const SizedBox(width: 4),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.textMuted.withOpacity(0.15)),
+          IconButton(
+            onPressed: controller.loadTransactions,
+            icon: const Icon(Icons.refresh_rounded, size: 22),
+            color: AppColors.gold,
+            tooltip: 'Refresh',
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.textMuted.withOpacity(0.15)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildViewToggleButton(
+                  icon: Icons.view_agenda_rounded,
+                  isSelected: !_isTableView,
+                  onTap: () => setState(() => _isTableView = false),
                 ),
-                child: Row(
-                  children: [
-                    _buildViewToggleButton(
-                      icon: Icons.view_agenda_rounded,
-                      isSelected: !_isTableView,
-                      onTap: () => setState(() => _isTableView = false),
-                    ),
-                    _buildViewToggleButton(
-                      icon: Icons.table_chart_rounded,
-                      isSelected: _isTableView,
-                      onTap: () => setState(() => _isTableView = true),
-                    ),
-                  ],
+                _buildViewToggleButton(
+                  icon: Icons.table_chart_rounded,
+                  isSelected: _isTableView,
+                  onTap: () => setState(() => _isTableView = true),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -482,7 +552,9 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.gold.withOpacity(0.1) : Colors.transparent,
+          color: isSelected
+              ? AppColors.gold.withOpacity(0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -558,7 +630,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.gold,
                 foregroundColor: AppColors.primaryDark,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -582,14 +657,18 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               shape: BoxShape.circle,
             ),
             child: Icon(
-              _searchQuery.isNotEmpty ? Icons.search_off_rounded : Icons.inbox_rounded,
+              _searchQuery.isNotEmpty
+                  ? Icons.search_off_rounded
+                  : Icons.inbox_rounded,
               size: 55,
               color: AppColors.primary.withOpacity(0.5),
             ),
           ),
           const SizedBox(height: 20),
           Text(
-            _searchQuery.isNotEmpty ? 'No results found' : 'No pending transactions',
+            _searchQuery.isNotEmpty
+                ? 'No results found'
+                : 'No pending transactions',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -608,7 +687,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  Widget _buildDataTable(TransactionController controller, List<TransactionModel> transactions) {
+  Widget _buildDataTable(
+    TransactionController controller,
+    List<TransactionModel> transactions,
+  ) {
     return RefreshIndicator(
       onRefresh: controller.refreshTransactions,
       color: AppColors.gold,
@@ -616,7 +698,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -630,7 +712,9 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               ],
             ),
             child: DataTable(
-              headingRowColor: WidgetStateProperty.all(AppColors.primary.withOpacity(0.05)),
+              headingRowColor: WidgetStateProperty.all(
+                AppColors.primary.withOpacity(0.05),
+              ),
               headingTextStyle: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,
@@ -657,7 +741,9 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 final transaction = entry.value;
                 return DataRow(
                   color: WidgetStateProperty.resolveWith<Color?>((states) {
-                    if (index.isEven) return AppColors.backgroundLight.withOpacity(0.5);
+                    if (index.isEven) {
+                      return AppColors.backgroundLight.withOpacity(0.5);
+                    }
                     return null;
                   }),
                   cells: [
@@ -665,13 +751,19 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     DataCell(
                       Text(
                         transaction.documentNumber,
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                     DataCell(
                       SizedBox(
                         width: 150,
-                        child: Text(transaction.title, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          transaction.title,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                     DataCell(
@@ -689,16 +781,22 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     DataCell(
                       transaction.department != null
                           ? Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          transaction.department!,
-                          style: const TextStyle(fontSize: 11, color: AppColors.primary),
-                        ),
-                      )
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                transaction.department!,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            )
                           : const Text('-'),
                     ),
                     DataCell(Text(transaction.formattedDate)),
@@ -713,13 +811,19 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  Widget _buildTableActions(TransactionController controller, TransactionModel transaction) {
+  Widget _buildTableActions(
+    TransactionController controller,
+    TransactionModel transaction,
+  ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           onPressed: () => controller.handleApproval(transaction, 'accept'),
-          icon: const Icon(Icons.check_circle_rounded, color: AppColors.success),
+          icon: const Icon(
+            Icons.check_circle_rounded,
+            color: AppColors.success,
+          ),
           tooltip: 'Accept',
           iconSize: 24,
         ),
@@ -731,7 +835,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         ),
         IconButton(
           onPressed: () => _showTransactionDetail(transaction, controller),
-          icon: Icon(Icons.info_outline_rounded, color: AppColors.primary.withOpacity(0.7)),
+          icon: Icon(
+            Icons.info_outline_rounded,
+            color: AppColors.primary.withOpacity(0.7),
+          ),
           tooltip: 'Details',
           iconSize: 24,
         ),
@@ -739,25 +846,32 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  Widget _buildTransactionList(TransactionController controller, List<TransactionModel> transactions) {
+  Widget _buildTransactionList(
+    TransactionController controller,
+    List<TransactionModel> transactions,
+  ) {
     return RefreshIndicator(
       onRefresh: controller.refreshTransactions,
       color: AppColors.gold,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: transactions.length,
         itemBuilder: (context, index) {
-          return _buildTransactionCard(controller, transactions[index], index + 1);
+          return _buildTransactionCard(
+            controller,
+            transactions[index],
+            index + 1,
+          );
         },
       ),
     );
   }
 
   Widget _buildTransactionCard(
-      TransactionController controller,
-      TransactionModel transaction,
-      int number,
-      ) {
+    TransactionController controller,
+    TransactionModel transaction,
+    int number,
+  ) {
     final isHighValue = transaction.amount >= 100000000;
 
     return GestureDetector(
@@ -786,12 +900,18 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.error.withOpacity(0.1),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.error),
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 14,
+                      color: AppColors.error,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'HIGH VALUE TRANSACTION',
@@ -855,7 +975,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.warning.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
@@ -929,7 +1052,9 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                                     transaction.department!,
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: AppColors.textMuted.withOpacity(0.8),
+                                      color: AppColors.textMuted.withOpacity(
+                                        0.8,
+                                      ),
                                     ),
                                   ),
                               ],
@@ -946,7 +1071,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         child: SizedBox(
                           height: 48,
                           child: ElevatedButton.icon(
-                            onPressed: () => controller.handleApproval(transaction, 'accept'),
+                            onPressed: () => controller.handleApproval(
+                              transaction,
+                              'accept',
+                            ),
                             icon: const Icon(Icons.check_rounded, size: 20),
                             label: const Text('Accept'),
                             style: ElevatedButton.styleFrom(
@@ -965,7 +1093,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         child: SizedBox(
                           height: 48,
                           child: ElevatedButton.icon(
-                            onPressed: () => controller.handleApproval(transaction, 'reject'),
+                            onPressed: () => controller.handleApproval(
+                              transaction,
+                              'reject',
+                            ),
                             icon: const Icon(Icons.close_rounded, size: 20),
                             label: const Text('Reject'),
                             style: ElevatedButton.styleFrom(
@@ -990,7 +1121,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  void _showTransactionDetail(TransactionModel transaction, TransactionController controller) {
+  void _showTransactionDetail(
+    TransactionModel transaction,
+    TransactionController controller,
+  ) {
     Get.bottomSheet(
       Container(
         decoration: const BoxDecoration(
@@ -1062,12 +1196,25 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     const Divider(),
                     const SizedBox(height: 16),
                     _buildDetailRow('Title', transaction.title),
-                    _buildDetailRow('Amount', transaction.formattedAmount, isAmount: true),
-                    _buildDetailRow('Requester', transaction.requesterName ?? '-'),
-                    _buildDetailRow('Department', transaction.department ?? '-'),
+                    _buildDetailRow(
+                      'Amount',
+                      transaction.formattedAmount,
+                      isAmount: true,
+                    ),
+                    _buildDetailRow(
+                      'Requester',
+                      transaction.requesterName ?? '-',
+                    ),
+                    _buildDetailRow(
+                      'Department',
+                      transaction.department ?? '-',
+                    ),
                     _buildDetailRow('Created Date', transaction.formattedDate),
-                    _buildDetailRow('Status', transaction.status.toUpperCase(),
-                        statusColor: AppColors.warning),
+                    _buildDetailRow(
+                      'Status',
+                      transaction.status.toUpperCase(),
+                      statusColor: AppColors.warning,
+                    ),
                     const SizedBox(height: 24),
                     Row(
                       children: [
@@ -1077,7 +1224,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Get.back();
-                                controller.handleApproval(transaction, 'accept');
+                                controller.handleApproval(
+                                  transaction,
+                                  'accept',
+                                );
                               },
                               icon: const Icon(Icons.check_rounded),
                               label: const Text('Accept'),
@@ -1098,7 +1248,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Get.back();
-                                controller.handleApproval(transaction, 'reject');
+                                controller.handleApproval(
+                                  transaction,
+                                  'reject',
+                                );
                               },
                               icon: const Icon(Icons.close_rounded),
                               label: const Text('Reject'),
@@ -1126,7 +1279,12 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isAmount = false, Color? statusColor}) {
+  Widget _buildDetailRow(
+    String label,
+    String value, {
+    bool isAmount = false,
+    Color? statusColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -1145,28 +1303,31 @@ class _TransactionListScreenState extends State<TransactionListScreen>
           Expanded(
             child: statusColor != null
                 ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: statusColor,
-                ),
-              ),
-            )
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  )
                 : Text(
-              value,
-              style: TextStyle(
-                fontSize: isAmount ? 18 : 14,
-                fontWeight: isAmount ? FontWeight.bold : FontWeight.w500,
-                color: isAmount ? AppColors.goldDark : AppColors.primary,
-              ),
-            ),
+                    value,
+                    style: TextStyle(
+                      fontSize: isAmount ? 18 : 14,
+                      fontWeight: isAmount ? FontWeight.bold : FontWeight.w500,
+                      color: isAmount ? AppColors.goldDark : AppColors.primary,
+                    ),
+                  ),
           ),
         ],
       ),

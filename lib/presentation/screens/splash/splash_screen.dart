@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -63,10 +62,7 @@ class _SplashScreenState extends State<SplashScreen>
         child: Stack(
           children: [
             // Background wave pattern
-            CustomPaint(
-              size: size,
-              painter: UBSWaveBackgroundPainter(),
-            ),
+            CustomPaint(size: size, painter: UBSWaveBackgroundPainter()),
 
             // Main Content
             SafeArea(
@@ -312,16 +308,22 @@ class UBSWaveBackgroundPainter extends CustomPainter {
     final path1 = Path();
     path1.moveTo(size.width * 0.6, 0);
     path1.quadraticBezierTo(
-      size.width * 1.1, size.height * 0.2,
-      size.width * 0.85, size.height * 0.45,
+      size.width * 1.1,
+      size.height * 0.2,
+      size.width * 0.85,
+      size.height * 0.45,
     );
     path1.quadraticBezierTo(
-      size.width * 0.6, size.height * 0.7,
-      size.width * 0.9, size.height * 0.85,
+      size.width * 0.6,
+      size.height * 0.7,
+      size.width * 0.9,
+      size.height * 0.85,
     );
     path1.quadraticBezierTo(
-      size.width * 1.1, size.height * 0.95,
-      size.width, size.height,
+      size.width * 1.1,
+      size.height * 0.95,
+      size.width,
+      size.height,
     );
     path1.lineTo(size.width, 0);
     path1.close();
@@ -335,16 +337,22 @@ class UBSWaveBackgroundPainter extends CustomPainter {
     final path2 = Path();
     path2.moveTo(size.width * 0.3, size.height);
     path2.quadraticBezierTo(
-      size.width * 0.1, size.height * 0.85,
-      size.width * 0.25, size.height * 0.65,
+      size.width * 0.1,
+      size.height * 0.85,
+      size.width * 0.25,
+      size.height * 0.65,
     );
     path2.quadraticBezierTo(
-      size.width * 0.45, size.height * 0.4,
-      size.width * 0.2, size.height * 0.2,
+      size.width * 0.45,
+      size.height * 0.4,
+      size.width * 0.2,
+      size.height * 0.2,
     );
     path2.quadraticBezierTo(
-      size.width * 0.05, size.height * 0.05,
-      0, size.height * 0.15,
+      size.width * 0.05,
+      size.height * 0.05,
+      0,
+      size.height * 0.15,
     );
     path2.lineTo(0, size.height);
     path2.close();
@@ -358,12 +366,16 @@ class UBSWaveBackgroundPainter extends CustomPainter {
     final path3 = Path();
     path3.moveTo(0, size.height * 0.7);
     path3.quadraticBezierTo(
-      size.width * 0.3, size.height * 0.6,
-      size.width * 0.5, size.height * 0.75,
+      size.width * 0.3,
+      size.height * 0.6,
+      size.width * 0.5,
+      size.height * 0.75,
     );
     path3.quadraticBezierTo(
-      size.width * 0.7, size.height * 0.9,
-      size.width * 0.4, size.height,
+      size.width * 0.7,
+      size.height * 0.9,
+      size.width * 0.4,
+      size.height,
     );
     path3.lineTo(0, size.height);
     path3.close();
@@ -377,13 +389,12 @@ class UBSWaveBackgroundPainter extends CustomPainter {
     final path4 = Path();
     path4.moveTo(0, 0);
     path4.quadraticBezierTo(
-      size.width * 0.3, size.height * 0.1,
-      size.width * 0.15, size.height * 0.25,
+      size.width * 0.3,
+      size.height * 0.1,
+      size.width * 0.15,
+      size.height * 0.25,
     );
-    path4.quadraticBezierTo(
-      0, size.height * 0.35,
-      0, size.height * 0.4,
-    );
+    path4.quadraticBezierTo(0, size.height * 0.35, 0, size.height * 0.4);
     path4.lineTo(0, 0);
     path4.close();
     canvas.drawPath(path4, paint4);
