@@ -7,7 +7,6 @@ import '../../../config/vpn_config.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/vpn_service.dart';
 import '../../../core/utils/device_helper.dart';
-import '../../../data/models/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,11 +19,26 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _userIdController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _apiService = ApiService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
+  String? _deviceId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDeviceId();
+  }
+
+  Future<void> _loadDeviceId() async {
+    final deviceId = await DeviceHelper.getDeviceId();
+    if (mounted) {
+      setState(() {
+        _deviceId = deviceId;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -54,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Login berhasil dan IMEI cocok
         debugPrint('✅ Login successful!');
         debugPrint('👤 User: ${response.user!.name}');
-        debugPrint('📱 IMEI matched: $_deviceId');
+        debugPrint('📱 IMEI matched: $deviceId');
 
         _showSuccessSnackbar(
           'Login berhasil! Selamat datang, ${response.user!.name}',
@@ -107,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         setState(() {
-          _errorMessage = response.message ?? 'Login gagal';
+          _errorMessage = _getReadableErrorMessage(response.message);
         });
       }
     } catch (e) {
@@ -296,10 +310,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ],
-    return Image.asset(
-      'assets/images/logo_full.png',
-      height: 60,
-      fit: BoxFit.contain,
     );
   }
 
@@ -322,64 +332,6 @@ class _LoginScreenState extends State<LoginScreen> {
           style: TextStyle(fontSize: 16, color: AppColors.textMuted),
         ),
       ],
-    );
-  }
-
-  /// Badge yang menampilkan Device ID
-  Widget _buildDeviceInfoBadge() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: _deviceId != null
-            ? AppColors.success.withOpacity(0.08)
-            : AppColors.warning.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: _deviceId != null
-              ? AppColors.success.withOpacity(0.2)
-              : AppColors.warning.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            _deviceId != null ? Icons.smartphone : Icons.warning_amber_rounded,
-            size: 16,
-            color: _deviceId != null ? AppColors.success : AppColors.warning,
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              _deviceId != null
-                  ? 'Device: ${_deviceId!.length > 20 ? '${_deviceId!.substring(0, 20)}...' : _deviceId}'
-                  : 'Getting device info...',
-              style: TextStyle(
-                fontSize: 12,
-                color: _deviceId != null
-                    ? AppColors.success
-                    : AppColors.warning,
-                fontWeight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (_deviceId == null) ...[
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppColors.warning.withOpacity(0.7),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 
@@ -459,11 +411,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             _obscurePassword = !_obscurePassword;
                           });
                         },
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
                 ),
               ),
               validator: (value) {
@@ -605,24 +552,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     letterSpacing: 0.5,
                   ),
                 ),
-        child: _isLoading
-            ? const SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.5,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              AppColors.primaryDark,
-            ),
-          ),
-        )
-            : const Text(
-          'Login',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
         ),
       ),
     );
@@ -651,21 +580,6 @@ class _LoginScreenState extends State<LoginScreen> {
             color: _isLoading
                 ? AppColors.textMuted.withOpacity(0.5)
                 : AppColors.textMuted,
-        onPressed: () {
-          Get.snackbar(
-            'Info',
-            'Hubungi admin untuk reset password',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: AppColors.primary,
-            colorText: Colors.white,
-            margin: const EdgeInsets.all(16),
-            borderRadius: 10,
-          );
-        },
-        child: const Text(
-          'Forgot Password?',
-          style: TextStyle(
-            color: AppColors.textMuted,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -673,62 +587,4 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-  Widget _buildLoadingOverlay() {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Container(
-        color: Colors.black.withOpacity(0.3),
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Animated loading indicator
-                SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 4,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
-                    backgroundColor: AppColors.gold.withOpacity(0.2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Verifying credentials...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Please wait',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textMuted.withOpacity(0.8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 }

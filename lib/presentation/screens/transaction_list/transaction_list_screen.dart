@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../controllers/transaction_controller.dart';
 
@@ -131,14 +132,15 @@ class _TransactionListScreenState extends State<TransactionListScreen>
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
-          // Baris 1: Logo + User + Actions (compact)
-          Row(
-            children: [
-              // Logo UBS (lebih compact)
-              Container(
+          // Logo UBS Gold
+          Image.asset(
+            'assets/images/logo_full.png',
+            height: 45,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 8,
@@ -151,13 +153,17 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     ],
                   ),
                   borderRadius: BorderRadius.circular(10),
-      child: Row(
-        children: [
-          // Logo UBS Gold - DIGANTI dengan image asset
-          Image.asset(
-            'assets/images/logo_full.png',
-            height: 45,
-            fit: BoxFit.contain,
+                ),
+                child: const Text(
+                  'UBS',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(width: 14),
 
@@ -178,120 +184,33 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-
-              // User Info (Expanded agar fleksibel)
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome back,',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textMuted.withOpacity(0.8),
-                      ),
-                    ),
-                    Text(
-                      controller.user?.name ?? 'User',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Actions (lebih compact)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Notification Badge (compact)
-                  _buildNotificationButton(controller),
-                  const SizedBox(width: 2),
-
-                  // Logout Button (compact)
-                  IconButton(
-                    onPressed: controller.logout,
-                    icon: const Icon(Icons.logout_rounded, size: 20),
-                    color: AppColors.textMuted,
-                    tooltip: 'Logout',
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          // Baris 2: VPN Status + Security Indicator
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const VpnStatusBadge(showDetails: true),
-              const SizedBox(width: 12),
-              const Expanded(child: SecurityIndicator()),
-            ],
                     color: AppColors.primary,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ],
             ),
           ),
 
-          // Notification Badge
-          Stack(
+          // Actions
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                onPressed: () {
-                  Get.snackbar(
-                    'Notifications',
-                    'You have ${controller.transactions.length} pending transactions',
-                    snackPosition: SnackPosition.TOP,
-                    backgroundColor: AppColors.primary,
-                    colorText: Colors.white,
-                  );
-                },
-                icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
-              ),
-              Obx(() => controller.transactions.isNotEmpty
-                  ? Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '${controller.transactions.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              )
-                  : const SizedBox()),
-            ],
-          ),
+              // Notification Badge
+              _buildNotificationButton(controller),
+              const SizedBox(width: 2),
 
-          // Logout - DIGANTI dengan showDialog agar cancel berfungsi
-          IconButton(
-            onPressed: () => _showLogoutDialog(controller),
-            icon: const Icon(Icons.logout_rounded, color: AppColors.textMuted),
-            tooltip: 'Logout',
+              // Logout Button
+              IconButton(
+                onPressed: () => _showLogoutDialog(controller),
+                icon: const Icon(Icons.logout_rounded, size: 20),
+                color: AppColors.textMuted,
+                tooltip: 'Logout',
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ],
           ),
         ],
       ),
@@ -446,11 +365,8 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         0,
         (sum, t) => sum + t.amount,
       );
-      final highValueCount = transactions
-          .where((t) => t.amount >= 100000000)
-          .length;
-      final totalAmount = transactions.fold<double>(0, (sum, t) => sum + t.amount);
-      final highValueCount = transactions.where((t) => t.amount >= 100000000).length;
+      final highValueCount =
+          transactions.where((t) => t.amount >= 100000000).length;
 
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -647,11 +563,13 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: AppColors.gold, strokeWidth: 3),
+          const CircularProgressIndicator(
+              color: AppColors.gold, strokeWidth: 3),
           const SizedBox(height: 20),
           Text(
             'Loading transactions...',
-            style: TextStyle(color: AppColors.textMuted.withOpacity(0.8), fontSize: 14),
+            style: TextStyle(
+                color: AppColors.textMuted.withOpacity(0.8), fontSize: 14),
           ),
         ],
       ),
@@ -671,12 +589,16 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 color: AppColors.error.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.error_outline_rounded, size: 50, color: AppColors.error),
+              child: const Icon(Icons.error_outline_rounded,
+                  size: 50, color: AppColors.error),
             ),
             const SizedBox(height: 20),
             const Text(
               'Failed to load transactions',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.primary),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary),
             ),
             const SizedBox(height: 10),
             Text(
@@ -692,15 +614,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.gold,
                 foregroundColor: AppColors.primaryDark,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],
@@ -734,16 +651,15 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 ? 'No results found'
                 : 'No pending transactions',
             style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            ),
-            _searchQuery.isNotEmpty ? 'No results found' : 'No pending transactions',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.primary),
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary),
           ),
           const SizedBox(height: 8),
           Text(
-            _searchQuery.isNotEmpty ? 'Try different keywords' : 'All transactions have been processed',
+            _searchQuery.isNotEmpty
+                ? 'Try different keywords'
+                : 'All transactions have been processed',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
           ),
         ],
@@ -768,7 +684,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4)),
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4)),
               ],
             ),
             child: DataTable(
@@ -784,9 +703,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 color: AppColors.textPrimary,
                 fontSize: 13,
               ),
-              headingRowColor: WidgetStateProperty.all(AppColors.primary.withOpacity(0.05)),
-              headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
-              dataTextStyle: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
               columnSpacing: 24,
               horizontalMargin: 20,
               columns: const [
@@ -840,12 +756,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         ),
                       ),
                     ),
-                    DataCell(Text(transaction.documentNumber, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12))),
-                    DataCell(SizedBox(width: 150, child: Text(transaction.title, overflow: TextOverflow.ellipsis))),
-                    DataCell(Text(
-                      transaction.formattedAmount,
-                      style: TextStyle(fontWeight: FontWeight.w600, color: transaction.amount >= 100000000 ? AppColors.error : AppColors.goldDark),
-                    )),
                     DataCell(Text(transaction.requesterName ?? '-')),
                     DataCell(
                       transaction.department != null
@@ -866,10 +776,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                                 ),
                               ),
                             )
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                        child: Text(transaction.department!, style: const TextStyle(fontSize: 11, color: AppColors.primary)),
-                      )
                           : const Text('-'),
                     ),
                     DataCell(Text(transaction.formattedDate)),
@@ -892,18 +798,16 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          onPressed: () => controller.handleApproval(transaction, 'accept'),
-          icon: const Icon(
-            Icons.check_circle_rounded,
-            color: AppColors.success,
-          ),
-          onPressed: () => _showApprovalDialog(controller, transaction, 'accept'),
-          icon: const Icon(Icons.check_circle_rounded, color: AppColors.success),
+          onPressed: () =>
+              _showApprovalDialog(controller, transaction, 'accept'),
+          icon:
+              const Icon(Icons.check_circle_rounded, color: AppColors.success),
           tooltip: 'Accept',
           iconSize: 24,
         ),
         IconButton(
-          onPressed: () => _showApprovalDialog(controller, transaction, 'reject'),
+          onPressed: () =>
+              _showApprovalDialog(controller, transaction, 'reject'),
           icon: const Icon(Icons.cancel_rounded, color: AppColors.error),
           tooltip: 'Reject',
           iconSize: 24,
@@ -947,7 +851,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     TransactionModel transaction,
     int number,
   ) {
-  Widget _buildTransactionCard(TransactionController controller, TransactionModel transaction, int number) {
     final isHighValue = transaction.amount >= 100000000;
 
     return GestureDetector(
@@ -957,8 +860,15 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: isHighValue ? Border.all(color: AppColors.error.withOpacity(0.3), width: 2) : null,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
+          border: isHighValue
+              ? Border.all(color: AppColors.error.withOpacity(0.3), width: 2)
+              : null,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4))
+          ],
         ),
         child: Column(
           children: [
@@ -981,7 +891,12 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                       color: AppColors.error,
                     ),
                     SizedBox(width: 6),
-                    Text('HIGH VALUE TRANSACTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.error, letterSpacing: 0.5)),
+                    Text('HIGH VALUE TRANSACTION',
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.error,
+                            letterSpacing: 0.5)),
                   ],
                 ),
               ),
@@ -995,76 +910,98 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                       Container(
                         width: 36,
                         height: 36,
-                        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)),
-                        child: Center(child: Text('#$number', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+                        decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(10)),
+                        child: Center(
+                            child: Text('#$number',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold))),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(transaction.documentNumber, style: TextStyle(fontSize: 12, color: AppColors.textMuted.withOpacity(0.9), fontWeight: FontWeight.w500)),
+                            Text(transaction.documentNumber,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textMuted.withOpacity(0.9),
+                                    fontWeight: FontWeight.w500)),
                             const SizedBox(height: 2),
-                            Text(transaction.formattedDate, style: TextStyle(fontSize: 11, color: AppColors.textMuted.withOpacity(0.7))),
+                            Text(transaction.formattedDate,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color:
+                                        AppColors.textMuted.withOpacity(0.7))),
                           ],
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'Pending',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.warning,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: AppColors.warning.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                        child: const Text('Pending', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.warning)),
+                            color: AppColors.warning.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20)),
+                        child: const Text('Pending',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.warning)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Text(transaction.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                  Text(transaction.title,
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary)),
                   const SizedBox(height: 8),
-                  Text(transaction.formattedAmount, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isHighValue ? AppColors.error : AppColors.goldDark)),
+                  Text(transaction.formattedAmount,
+                      style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: isHighValue
+                              ? AppColors.error
+                              : AppColors.goldDark)),
                   if (transaction.requesterName != null) ...[
                     const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: AppColors.backgroundLight, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                          color: AppColors.backgroundLight,
+                          borderRadius: BorderRadius.circular(10)),
                       child: Row(
                         children: [
                           CircleAvatar(
                             radius: 16,
                             backgroundColor: AppColors.primary.withOpacity(0.1),
-                            child: Text(transaction.requesterName![0].toUpperCase(), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                            child: Text(
+                                transaction.requesterName![0].toUpperCase(),
+                                style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12)),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(transaction.requesterName!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary)),
+                                Text(transaction.requesterName!,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.primary)),
                                 if (transaction.department != null)
-                                  Text(
-                                    transaction.department!,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textMuted.withOpacity(
-                                        0.8,
-                                      ),
-                                    ),
-                                  ),
-                                  Text(transaction.department!, style: TextStyle(fontSize: 11, color: AppColors.textMuted.withOpacity(0.8))),
+                                  Text(transaction.department!,
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textMuted
+                                              .withOpacity(0.8))),
                               ],
                             ),
                           ),
@@ -1079,14 +1016,16 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         child: SizedBox(
                           height: 48,
                           child: ElevatedButton.icon(
-                            onPressed: () => controller.handleApproval(
-                              transaction,
-                              'accept',
-                            ),
-                            onPressed: () => _showApprovalDialog(controller, transaction, 'accept'),
+                            onPressed: () => _showApprovalDialog(
+                                controller, transaction, 'accept'),
                             icon: const Icon(Icons.check_rounded, size: 20),
                             label: const Text('Accept'),
-                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.success,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12))),
                           ),
                         ),
                       ),
@@ -1095,14 +1034,16 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         child: SizedBox(
                           height: 48,
                           child: ElevatedButton.icon(
-                            onPressed: () => controller.handleApproval(
-                              transaction,
-                              'reject',
-                            ),
-                            onPressed: () => _showApprovalDialog(controller, transaction, 'reject'),
+                            onPressed: () => _showApprovalDialog(
+                                controller, transaction, 'reject'),
                             icon: const Icon(Icons.close_rounded, size: 20),
                             label: const Text('Reject'),
-                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.error,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12))),
                           ),
                         ),
                       ),
@@ -1123,12 +1064,20 @@ class _TransactionListScreenState extends State<TransactionListScreen>
   ) {
     Get.bottomSheet(
       Container(
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(margin: const EdgeInsets.symmetric(vertical: 12), width: 40, height: 4, decoration: BoxDecoration(color: AppColors.textMuted.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
+              Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: AppColors.textMuted.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2))),
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -1136,18 +1085,34 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   children: [
                     Row(
                       children: [
-                        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: AppColors.gold.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.receipt_long_rounded, color: AppColors.gold, size: 28)),
+                        Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                                color: AppColors.gold.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12)),
+                            child: const Icon(Icons.receipt_long_rounded,
+                                color: AppColors.gold, size: 28)),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Transaction Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                              Text(transaction.documentNumber, style: TextStyle(fontSize: 13, color: AppColors.textMuted.withOpacity(0.8))),
+                              const Text('Transaction Details',
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary)),
+                              Text(transaction.documentNumber,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color:
+                                          AppColors.textMuted.withOpacity(0.8))),
                             ],
                           ),
                         ),
-                        IconButton(onPressed: () => Get.back(), icon: const Icon(Icons.close_rounded)),
+                        IconButton(
+                            onPressed: () => Get.back(),
+                            icon: const Icon(Icons.close_rounded)),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -1173,7 +1138,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                       transaction.status.toUpperCase(),
                       statusColor: AppColors.warning,
                     ),
-                    _buildDetailRow('Status', transaction.status.toUpperCase(), statusColor: AppColors.warning),
                     const SizedBox(height: 24),
                     Row(
                       children: [
@@ -1183,15 +1147,16 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Get.back();
-                                controller.handleApproval(
-                                  transaction,
-                                  'accept',
-                                );
-                                _showApprovalDialog(controller, transaction, 'accept');
+                                _showApprovalDialog(
+                                    controller, transaction, 'accept');
                               },
                               icon: const Icon(Icons.check_rounded),
                               label: const Text('Accept'),
-                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.success,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14))),
                             ),
                           ),
                         ),
@@ -1202,15 +1167,16 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Get.back();
-                                controller.handleApproval(
-                                  transaction,
-                                  'reject',
-                                );
-                                _showApprovalDialog(controller, transaction, 'reject');
+                                _showApprovalDialog(
+                                    controller, transaction, 'reject');
                               },
                               icon: const Icon(Icons.close_rounded),
                               label: const Text('Reject'),
-                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.error,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14))),
                             ),
                           ),
                         ),
@@ -1239,40 +1205,31 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 100, child: Text(label, style: TextStyle(fontSize: 13, color: AppColors.textMuted.withOpacity(0.8)))),
+          SizedBox(
+              width: 100,
+              child: Text(label,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textMuted.withOpacity(0.8)))),
           Expanded(
             child: statusColor != null
                 ? Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: statusColor,
-                      ),
-                    ),
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6)),
+                    child: Text(value,
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: statusColor)),
                   )
-                : Text(
-                    value,
+                : Text(value,
                     style: TextStyle(
-                      fontSize: isAmount ? 18 : 14,
-                      fontWeight: isAmount ? FontWeight.bold : FontWeight.w500,
-                      color: isAmount ? AppColors.goldDark : AppColors.primary,
-                    ),
-                  ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-              child: Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: statusColor)),
-            )
-                : Text(value, style: TextStyle(fontSize: isAmount ? 18 : 14, fontWeight: isAmount ? FontWeight.bold : FontWeight.w500, color: isAmount ? AppColors.goldDark : AppColors.primary)),
+                        fontSize: isAmount ? 18 : 14,
+                        fontWeight: isAmount ? FontWeight.bold : FontWeight.w500,
+                        color: isAmount ? AppColors.goldDark : AppColors.primary)),
           ),
         ],
       ),
@@ -1280,53 +1237,76 @@ class _TransactionListScreenState extends State<TransactionListScreen>
   }
 
   String _formatCompactCurrency(double amount) {
-    if (amount >= 1000000000) return 'Rp ${(amount / 1000000000).toStringAsFixed(1)}B';
-    if (amount >= 1000000) return 'Rp ${(amount / 1000000).toStringAsFixed(0)}M';
+    if (amount >= 1000000000) {
+      return 'Rp ${(amount / 1000000000).toStringAsFixed(1)}B';
+    }
+    if (amount >= 1000000) {
+      return 'Rp ${(amount / 1000000).toStringAsFixed(0)}M';
+    }
     if (amount >= 1000) return 'Rp ${(amount / 1000).toStringAsFixed(0)}K';
     return 'Rp ${amount.toStringAsFixed(0)}';
   }
-}
 
   // ================================
-  // DIALOG METHODS - CANCEL BUTTON FIXED
+  // DIALOG METHODS
   // ================================
 
-  void _showApprovalDialog(TransactionController controller, TransactionModel transaction, String action) {
+  void _showApprovalDialog(
+      TransactionController controller, TransactionModel transaction, String action) {
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
             action == 'accept' ? 'Accept Transaction?' : 'Reject Transaction?',
-            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: AppColors.primary, fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(transaction.title, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+              Text(transaction.title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, color: AppColors.primary)),
               const SizedBox(height: 4),
-              Text(transaction.formattedAmount, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: action == 'accept' ? AppColors.success : AppColors.error)),
+              Text(transaction.formattedAmount,
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: action == 'accept'
+                          ? AppColors.success
+                          : AppColors.error)),
               const SizedBox(height: 12),
-              const Text('You will need to verify with Face Recognition', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              const Text('You will need to verify with Face Recognition',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+              child: const Text('Cancel',
+                  style: TextStyle(color: AppColors.textMuted)),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                Get.toNamed(AppRoutes.faceRecognition, arguments: {'user': controller.user, 'token': controller.token, 'transaction': transaction, 'action': action});
+                Get.toNamed(AppRoutes.faceRecognition, arguments: {
+                  'user': controller.user,
+                  'token': controller.token,
+                  'transaction': transaction,
+                  'action': action
+                });
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: action == 'accept' ? AppColors.success : AppColors.error,
+                backgroundColor:
+                    action == 'accept' ? AppColors.success : AppColors.error,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               child: Text(action == 'accept' ? 'Accept' : 'Reject'),
             ),
@@ -1342,20 +1322,28 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Logout', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Logout',
+              style: TextStyle(
+                  color: AppColors.primary, fontWeight: FontWeight.bold)),
           content: const Text('Are you sure you want to logout?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+              child: const Text('Cancel',
+                  style: TextStyle(color: AppColors.textMuted)),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 Get.offAllNamed(AppRoutes.login);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12))),
               child: const Text('Logout'),
             ),
           ],

@@ -119,6 +119,24 @@ class _SplashScreenState extends State<SplashScreen>
       'assets/images/ubs_logo_gold.png',
       height: isSmallScreen ? 100 : 130,
       fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFD4A574).withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            'UBS GOLD',
+            style: TextStyle(
+              fontSize: isSmallScreen ? 24 : 32,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFD4A574),
+              letterSpacing: 3,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -169,6 +187,16 @@ class _SplashScreenState extends State<SplashScreen>
               fit: BoxFit.contain,
               color: const Color(0xFF5C4827),
               colorBlendMode: BlendMode.srcIn,
+              errorBuilder: (context, error, stackTrace) {
+                return Text(
+                  'UBS',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 28 : 36,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF5C4827),
+                  ),
+                );
+              },
             ),
 
             // Trust in Gold
