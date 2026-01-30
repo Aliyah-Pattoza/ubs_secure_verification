@@ -7,6 +7,7 @@ import '../../../config/vpn_config.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/vpn_service.dart';
 import '../../../core/utils/device_helper.dart';
+import '../../../data/models/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,135 +16,39 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _userIdController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _userIdFocusNode = FocusNode();
-  final _passwordFocusNode = FocusNode();
+  final _apiService = ApiService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
-  String? _deviceId;
-  Map<String, dynamic>? _deviceInfo;
-
-  // Animation controller untuk loading
-  late AnimationController _loadingAnimController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _initDeviceInfo();
-    _setupAnimations();
-  }
-
-  void _setupAnimations() {
-    _loadingAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _loadingAnimController, curve: Curves.easeInOut),
-    );
-  }
-
-  /// Ambil Device ID/IMEI saat halaman dibuka
-  Future<void> _initDeviceInfo() async {
-    try {
-      final deviceId = await DeviceHelper.getDeviceId();
-      final deviceInfo = await DeviceHelper.getDeviceInfo();
-
-      if (mounted) {
-        setState(() {
-          _deviceId = deviceId;
-          _deviceInfo = deviceInfo;
-        });
-      }
-
-      debugPrint('📱 Device ID: $deviceId');
-      debugPrint('📱 Device Info: $deviceInfo');
-    } catch (e) {
-      debugPrint('❌ Error getting device info: $e');
-    }
-  }
 
   @override
   void dispose() {
     _userIdController.dispose();
     _passwordController.dispose();
-    _userIdFocusNode.dispose();
-    _passwordFocusNode.dispose();
-    _loadingAnimController.dispose();
     super.dispose();
   }
 
-  /// Validasi User ID
-  String? _validateUserId(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'User ID tidak boleh kosong';
-    }
-    if (value.trim().length < 3) {
-      return 'User ID minimal 3 karakter';
-    }
-    // Hanya boleh alphanumeric dan underscore
-    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value.trim())) {
-      return 'User ID hanya boleh huruf, angka, dan underscore';
-    }
-    return null;
-  }
-
-  /// Validasi Password
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Password tidak boleh kosong';
-    }
-    if (value.length < 6) {
-      return 'Password minimal 6 karakter';
-    }
-    return null;
-  }
-
-  /// Handle Login Process
   Future<void> _handleLogin() async {
-    // Dismiss keyboard
-    FocusScope.of(context).unfocus();
-
-    // Validate form
-    if (!_formKey.currentState!.validate()) {
-      _showErrorSnackbar('Mohon lengkapi form dengan benar');
-      return;
-    }
-
-    // Check device ID
-    if (_deviceId == null || _deviceId!.isEmpty) {
-      _showErrorSnackbar('Gagal mendapatkan Device ID. Coba restart aplikasi.');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    _loadingAnimController.forward();
 
     try {
-      debugPrint('🔐 Attempting login...');
-      debugPrint('👤 User ID: ${_userIdController.text.trim()}');
-      debugPrint('📱 Device ID: $_deviceId');
-
-      // Simulate network delay for better UX
-      await Future.delayed(const Duration(milliseconds: 500));
+      final deviceId = await DeviceHelper.getDeviceId();
 
       final response = await ApiService.login(
         userId: _userIdController.text.trim(),
         password: _passwordController.text,
-        imei: _deviceId!,
+        imei: deviceId,
       );
-
-      debugPrint('📨 Response: ${response.success} - ${response.message}');
 
       if (response.success && response.user != null) {
         // Login berhasil dan IMEI cocok
@@ -198,27 +103,19 @@ class _LoginScreenState extends State<LoginScreen>
         // Navigate ke Face Recognition
         Get.offNamed(
           AppRoutes.faceRecognition,
-          arguments: {
-            'user': response.user,
-            'token': response.token,
-            'deviceId': _deviceId,
-          },
+          arguments: {'user': response.user, 'token': response.token},
         );
       } else {
-        // Login gagal
-        debugPrint('❌ Login failed: ${response.message}');
         setState(() {
-          _errorMessage = _getReadableErrorMessage(response.message);
+          _errorMessage = response.message ?? 'Login gagal';
         });
       }
     } catch (e) {
-      debugPrint('❌ Login error: $e');
       setState(() {
-        _errorMessage = 'Terjadi kesalahan. Periksa koneksi internet Anda.';
+        _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
       });
     } finally {
       if (mounted) {
-        _loadingAnimController.reverse();
         setState(() {
           _isLoading = false;
         });
@@ -281,45 +178,34 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Main Content
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: AppColors.background,
-            child: SafeArea(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      _buildHeader(),
-                      const SizedBox(height: 40),
-                      _buildWelcomeText(),
-                      const SizedBox(height: 8),
-                      _buildDeviceInfoBadge(),
-                      const SizedBox(height: 24),
-                      _buildLoginForm(),
-                      const SizedBox(height: 20),
-                      if (_errorMessage != null) _buildErrorMessage(),
-                      _buildLoginButton(),
-                      const SizedBox(height: 16),
-                      _buildForgotPassword(),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: AppColors.background,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  _buildHeader(),
+                  const SizedBox(height: 50),
+                  _buildWelcomeText(),
+                  const SizedBox(height: 32),
+                  _buildLoginForm(),
+                  const SizedBox(height: 24),
+                  if (_errorMessage != null) _buildErrorMessage(),
+                  _buildLoginButton(),
+                  const SizedBox(height: 16),
+                  _buildForgotPassword(),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
           ),
-
-          // Loading Overlay
-          if (_isLoading) _buildLoadingOverlay(),
-        ],
+        ),
       ),
     );
   }
@@ -410,6 +296,10 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
       ],
+    return Image.asset(
+      'assets/images/logo_full.png',
+      height: 60,
+      fit: BoxFit.contain,
     );
   }
 
@@ -512,7 +402,6 @@ class _LoginScreenState extends State<LoginScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User ID Field
             const Text(
               'User ID',
               style: TextStyle(
@@ -524,24 +413,20 @@ class _LoginScreenState extends State<LoginScreen>
             const SizedBox(height: 10),
             TextFormField(
               controller: _userIdController,
-              focusNode: _userIdFocusNode,
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.next,
-              enabled: !_isLoading,
-              autocorrect: false,
-              textCapitalization: TextCapitalization.none,
               decoration: _inputDecoration(
                 'Enter your user ID',
                 Icons.person_outline_rounded,
               ),
-              validator: _validateUserId,
-              onFieldSubmitted: (_) {
-                _passwordFocusNode.requestFocus();
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'User ID tidak boleh kosong';
+                }
+                return null;
               },
             ),
             const SizedBox(height: 20),
-
-            // Password Field
             const Text(
               'Password',
               style: TextStyle(
@@ -553,24 +438,19 @@ class _LoginScreenState extends State<LoginScreen>
             const SizedBox(height: 10),
             TextFormField(
               controller: _passwordController,
-              focusNode: _passwordFocusNode,
               obscureText: _obscurePassword,
               textInputAction: TextInputAction.done,
-              enabled: !_isLoading,
+              onFieldSubmitted: (_) => _handleLogin(),
               decoration: _inputDecoration(
                 'Enter your password',
                 Icons.lock_outline_rounded,
                 suffixIcon: IconButton(
-                  icon: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      key: ValueKey(_obscurePassword),
-                      color: AppColors.textMuted.withOpacity(0.7),
-                      size: 22,
-                    ),
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.textMuted.withOpacity(0.7),
+                    size: 22,
                   ),
                   onPressed: _isLoading
                       ? null
@@ -579,10 +459,22 @@ class _LoginScreenState extends State<LoginScreen>
                             _obscurePassword = !_obscurePassword;
                           });
                         },
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
                 ),
               ),
-              validator: _validatePassword,
-              onFieldSubmitted: (_) => _handleLogin(),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Password tidak boleh kosong';
+                }
+                if (value.length < 6) {
+                  return 'Password minimal 6 karakter';
+                }
+                return null;
+              },
             ),
           ],
         ),
@@ -629,62 +521,32 @@ class _LoginScreenState extends State<LoginScreen>
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: AppColors.error, width: 2),
       ),
-      disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: AppColors.textMuted.withOpacity(0.1)),
-      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 
   Widget _buildErrorMessage() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+    return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.08),
+        color: AppColors.error.withOpacity(0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.error.withOpacity(0.2)),
+        border: Border.all(color: AppColors.error.withOpacity(0.3)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.error_outline_rounded,
-              color: AppColors.error,
-              size: 18,
-            ),
+          const Icon(
+            Icons.error_outline_rounded,
+            color: AppColors.error,
+            size: 22,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Login Gagal',
-                  style: TextStyle(
-                    color: AppColors.error,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(
-                    color: AppColors.error.withOpacity(0.9),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: AppColors.error, fontSize: 14),
             ),
           ),
         ],
@@ -697,13 +559,12 @@ class _LoginScreenState extends State<LoginScreen>
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: (_isLoading || _deviceId == null) ? null : _handleLogin,
+        onPressed: _isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.gold,
           foregroundColor: AppColors.primaryDark,
-          disabledBackgroundColor: AppColors.gold.withOpacity(0.4),
-          disabledForegroundColor: AppColors.primaryDark.withOpacity(0.5),
-          elevation: _isLoading ? 0 : 4,
+          disabledBackgroundColor: AppColors.gold.withOpacity(0.5),
+          elevation: 4,
           shadowColor: AppColors.gold.withOpacity(0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -744,6 +605,24 @@ class _LoginScreenState extends State<LoginScreen>
                     letterSpacing: 0.5,
                   ),
                 ),
+        child: _isLoading
+            ? const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              AppColors.primaryDark,
+            ),
+          ),
+        )
+            : const Text(
+          'Login',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
@@ -772,6 +651,21 @@ class _LoginScreenState extends State<LoginScreen>
             color: _isLoading
                 ? AppColors.textMuted.withOpacity(0.5)
                 : AppColors.textMuted,
+        onPressed: () {
+          Get.snackbar(
+            'Info',
+            'Hubungi admin untuk reset password',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColors.primary,
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(16),
+            borderRadius: 10,
+          );
+        },
+        child: const Text(
+          'Forgot Password?',
+          style: TextStyle(
+            color: AppColors.textMuted,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -836,4 +730,5 @@ class _LoginScreenState extends State<LoginScreen>
       ),
     );
   }
+}
 }

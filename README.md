@@ -1,6 +1,104 @@
-# ubs_secure_verification
+# UBS Gold Secure Verification App
 
-A new Flutter project.
+[![Flutter Version](https://img.shields.io/badge/Flutter-3.0+-blue.svg)](https://flutter.dev/)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+
+A secure mobile application for transaction approval with multi-layer authentication including Face Recognition and VPN encryption.
+
+## 📱 Overview
+
+UBS Gold Secure Verification App adalah aplikasi mobile yang dirancang khusus untuk memberikan keamanan maksimal dalam proses verifikasi dan persetujuan transaksi keuangan. Aplikasi ini menggunakan teknologi Face Recognition dan koneksi VPN untuk memastikan setiap transaksi diverifikasi oleh pihak yang berwenang.
+
+## 🏗️ Architecture
+
+```
+Mobile App (Flutter)
+    ↓
+VPN Server (WireGuard/MikroTik)
+    ↓
+Backend APIs (LAN)
+    ├── Face Recognition API
+    ├── Transaction Service
+    └── Auth Service
+```
+
+## 🚀 Getting Started
+
+- Flutter SDK 3.0+
+- Dart 2.19+
+- Android Studio / Xcode
+- Device dengan kamera untuk Face Recognition
+
+
+## 🔧 Configuration
+
+### 1. DeviceID Registration
+Setiap device yang akan menggunakan aplikasi harus didaftarkan DeviceID-nya ke sistem:
+
+### 2. VPN Configuration
+WireGuard client akan otomatis terkonfigurasi saat login pertama kali. Pastikan VPN server sudah running.
+
+### 3. Face Recognition Setup
+- API endpoint harus dikonfigurasi di `api_config.dart`
+- Minimal resolusi kamera: 720p
+- Format response API: JSON
+
+## 📱 User Flow
+
+1. **Splash Screen** → Loading & sistem check
+2. **Login** → User ID + Password + DeviceID verification
+3. **Face Verification** → Biometric authentication
+4. **Dashboard** → View pending transactions
+5. **Action** → Accept/Reject transaction
+6. **Re-verification** → Face recognition untuk konfirmasi
+7. **Submit** → Process approval/rejection
+
+## 🛠️ Tech Stack
+
+| Category | Technology |
+|----------|-----------|
+| **Frontend** | Flutter (Dart) |
+| **State Management** | Provider |
+| **Face Recognition** | face_camera package + Custom API |
+| **Security** | WireGuard VPN, JWT, AES-256 |
+| **Backend** | Node.js / Python (RESTful API) |
+| **Database** | PostgreSQL / MySQL |
+| **VPN Server** | MikroTik |
+
+## 📸 Screenshots
+
+| Splash Screen | Login | Face Verification |
+|--------------|-------|-------------------|
+| ![Splash](screenshots/splash.png) | ![Login](screenshots/login.png) | ![Face](screenshots/face_verify.png) |
+
+| Transaction List | Approval | Success |
+|-----------------|----------|---------|
+| ![List](screenshots/transaction_list.png) | ![Approve](screenshots/approve.png) | ![Success](screenshots/success.png) |
+
+## 🚦 Project Status
+
+- ✅ Phase 1: POC Development (Completed)
+- 🔄 Phase 2: Internal Testing (In Progress)
+- ⏳ Phase 3: UAT & Refinement (Planned)
+- ⏳ Phase 4: Production Deployment (Planned)
+
+## 👥 Team
+
+- **Development Team**: [Lathifah Sahda] & [Andi Aliyah Nur Inayah]
+- **Security Advisor**: [Name]
+- **Project Manager**: [Name]
+
+## 📄 License
+
+This project is proprietary software owned by UBS Gold. Unauthorized copying, distribution, or use is strictly prohibited.
+
+**© 2026 UBS Gold. All Rights Reserved.**
+
+*Trust in Gold*
+
+---
+
+# ubs_secure_verification
 
 ## Getting Started
 
