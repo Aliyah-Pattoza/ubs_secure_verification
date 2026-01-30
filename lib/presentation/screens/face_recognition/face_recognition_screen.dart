@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -148,7 +147,9 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
   Future<void> _capturePhoto() async {
     if (_isScanning || _scanComplete) return;
 
-    if (!kIsWeb && (_cameraController == null || !_cameraController!.value.isInitialized)) {
+    if (!kIsWeb &&
+        (_cameraController == null ||
+            !_cameraController!.value.isInitialized)) {
       _showErrorSnackbar('Camera belum siap');
       return;
     }
@@ -165,7 +166,8 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
       if (kIsWeb) {
         // Web: Gunakan mock base64
         await Future.delayed(const Duration(seconds: 1));
-        base64Image = 'mock_base64_image_${DateTime.now().millisecondsSinceEpoch}';
+        base64Image =
+            'mock_base64_image_${DateTime.now().millisecondsSinceEpoch}';
       } else {
         // Mobile: Capture dari camera
         final XFile imageFile = await _cameraController!.takePicture();
@@ -185,7 +187,6 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
       // Kirim ke API untuk verifikasi
       await _verifyFace(base64Image);
-
     } catch (e) {
       debugPrint('❌ Capture error: $e');
       setState(() {
@@ -243,7 +244,9 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
           _statusSubMessage = response.message ?? 'Face not recognized';
         });
 
-        _showErrorSnackbar(response.message ?? 'Wajah tidak cocok. Silakan coba lagi.');
+        _showErrorSnackbar(
+          response.message ?? 'Wajah tidak cocok. Silakan coba lagi.',
+        );
       }
     } catch (e) {
       debugPrint('❌ Verification error: $e');
@@ -270,6 +273,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         status: approvalAction == 'accept' ? 'accepted' : 'rejected',
         base64Image: base64Image,
         userId: user?.id ?? '',
+        nik: user?.nik ?? '',
         token: token,
       );
 
@@ -334,7 +338,9 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
       _capturedBase64Image = null;
       _capturedImageBytes = null;
       _statusMessage = kIsWeb ? 'Ready to Scan' : 'Position Your Face';
-      _statusSubMessage = kIsWeb ? 'Tap the button to verify' : 'Look at the camera and tap capture';
+      _statusSubMessage = kIsWeb
+          ? 'Tap the button to verify'
+          : 'Look at the camera and tap capture';
     });
   }
 
@@ -450,7 +456,9 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
                 '${approvalAction == 'accept' ? 'Approve' : 'Reject'}: ${pendingTransaction!.documentNumber}',
                 style: TextStyle(
                   fontSize: 13,
-                  color: approvalAction == 'accept' ? AppColors.success : AppColors.error,
+                  color: approvalAction == 'accept'
+                      ? AppColors.success
+                      : AppColors.error,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -466,7 +474,9 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         animation: _animationController,
         builder: (context, child) {
           return Transform.scale(
-            scale: (_isScanning && !_scanComplete) ? _pulseAnimation.value : 1.0,
+            scale: (_isScanning && !_scanComplete)
+                ? _pulseAnimation.value
+                : 1.0,
             child: child,
           );
         },
@@ -476,10 +486,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
           decoration: BoxDecoration(
             color: Colors.black,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: _getBorderColor(),
-              width: 4,
-            ),
+            border: Border.all(color: _getBorderColor(), width: 4),
             boxShadow: [
               BoxShadow(
                 color: _getBorderColor().withOpacity(0.3),
@@ -497,12 +504,10 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
                 _buildCameraPreview(),
 
                 // Scanning overlay
-                if (_isScanning && !_scanComplete)
-                  _buildScanningOverlay(),
+                if (_isScanning && !_scanComplete) _buildScanningOverlay(),
 
                 // Success overlay
-                if (_scanComplete)
-                  _buildSuccessOverlay(),
+                if (_scanComplete) _buildSuccessOverlay(),
 
                 // Corner markers
                 ..._buildCornerMarkers(),
@@ -711,18 +716,12 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.white, width: 2),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(6),
-          child: Image.memory(
-            _capturedImageBytes!,
-            fit: BoxFit.cover,
-          ),
+          child: Image.memory(_capturedImageBytes!, fit: BoxFit.cover),
         ),
       ),
     );
@@ -741,7 +740,11 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
       Positioned(top: 16, left: 16, child: _buildCorner(color, true, true)),
       Positioned(top: 16, right: 16, child: _buildCorner(color, true, false)),
       Positioned(bottom: 16, left: 16, child: _buildCorner(color, false, true)),
-      Positioned(bottom: 16, right: 16, child: _buildCorner(color, false, false)),
+      Positioned(
+        bottom: 16,
+        right: 16,
+        child: _buildCorner(color, false, false),
+      ),
     ];
   }
 
@@ -784,10 +787,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
           const SizedBox(height: 6),
           Text(
             _statusSubMessage,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textMuted,
-            ),
+            style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -840,10 +840,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
             icon: const Icon(Icons.camera_alt_rounded),
             label: const Text(
               'Capture & Verify',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.gold,

@@ -140,6 +140,7 @@ class FaceRecognitionController extends GetxController
         status: approvalAction == 'accept' ? 'accepted' : 'rejected',
         base64Image: 'mock_base64_image',
         userId: user?.id ?? '',
+        nik: user?.nik ?? '',
         token: token,
       );
 

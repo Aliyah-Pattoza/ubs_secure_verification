@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../config/vpn_config.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/vpn_service.dart';
 import '../../../core/utils/device_helper.dart';
 import '../../../data/models/user_model.dart';
 
@@ -48,6 +51,56 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (response.success && response.user != null) {
+        // Login berhasil dan IMEI cocok
+        debugPrint('✅ Login successful!');
+        debugPrint('👤 User: ${response.user!.name}');
+        debugPrint('📱 IMEI matched: $_deviceId');
+
+        _showSuccessSnackbar(
+          'Login berhasil! Selamat datang, ${response.user!.name}',
+        );
+
+        // ============================================
+        // AUTO-CONNECT VPN SETELAH IMEI COCOK
+        // ============================================
+        debugPrint('🔐 Connecting VPN after IMEI verification...');
+        try {
+          final vpnService = Get.put(VpnService());
+          await vpnService.init();
+
+          // Config: dari API (vpn_config) atau dari konfigurasi terpusat (lib/config/vpn_config.dart)
+          VpnConfig? vpnConfig;
+          if (response.vpnConfig != null && response.vpnConfig!.isNotEmpty) {
+            try {
+              final configJson = jsonDecode(response.vpnConfig!);
+              vpnConfig = VpnConfig.fromJson(configJson);
+            } catch (e) {
+              debugPrint(
+                '⚠️ Failed to parse VPN config, using activeVpnConfig',
+              );
+              vpnConfig = activeVpnConfig;
+            }
+          } else {
+            vpnConfig = activeVpnConfig;
+          }
+
+          // Connect VPN
+          final vpnConnected = await vpnService.connect(config: vpnConfig);
+          if (vpnConnected) {
+            debugPrint('✅ VPN Connected successfully!');
+            _showSuccessSnackbar('VPN terhubung');
+          } else {
+            debugPrint('⚠️ VPN connection failed, but continuing...');
+          }
+        } catch (e) {
+          debugPrint('❌ VPN connection error: $e');
+          // Continue even if VPN fails
+        }
+
+        // Tunggu sebentar agar snackbar terlihat
+        await Future.delayed(const Duration(milliseconds: 800));
+
+        // Navigate ke Face Recognition
         Get.offNamed(
           AppRoutes.faceRecognition,
           arguments: {'user': response.user, 'token': response.token},
@@ -68,6 +121,58 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     }
+  }
+
+  /// Convert error message to user-friendly message
+  String _getReadableErrorMessage(String? message) {
+    if (message == null) return 'Login gagal. Silakan coba lagi.';
+
+    final lowerMessage = message.toLowerCase();
+
+    if (lowerMessage.contains('imei') || lowerMessage.contains('device')) {
+      return 'Perangkat ini tidak terdaftar. Hubungi admin untuk mendaftarkan perangkat Anda.';
+    }
+    if (lowerMessage.contains('password')) {
+      return 'Password salah. Silakan coba lagi.';
+    }
+    if (lowerMessage.contains('user') ||
+        lowerMessage.contains('tidak ditemukan')) {
+      return 'User ID tidak ditemukan. Periksa kembali User ID Anda.';
+    }
+    if (lowerMessage.contains('blocked') ||
+        lowerMessage.contains('suspended')) {
+      return 'Akun Anda diblokir. Hubungi admin untuk informasi lebih lanjut.';
+    }
+
+    return message;
+  }
+
+  void _showErrorSnackbar(String message) {
+    Get.snackbar(
+      'Error',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppColors.error,
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+      icon: const Icon(Icons.error_outline, color: Colors.white),
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  void _showSuccessSnackbar(String message) {
+    Get.snackbar(
+      'Berhasil',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppColors.success,
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+      icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+      duration: const Duration(seconds: 2),
+    );
   }
 
   @override
@@ -106,6 +211,91 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildHeader() {
+    return Row(
+      children: [
+        // UBS Logo
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Text(
+            'UBS',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'UBS GOLD',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Trust In Gold',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.gold.withOpacity(0.9),
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const Spacer(),
+        // Security badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.success.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.success.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.security_rounded,
+                size: 14,
+                color: AppColors.success.withOpacity(0.8),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Secure',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.success.withOpacity(0.9),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     return Image.asset(
       'assets/images/logo_full.png',
       height: 60,
@@ -132,6 +322,64 @@ class _LoginScreenState extends State<LoginScreen> {
           style: TextStyle(fontSize: 16, color: AppColors.textMuted),
         ),
       ],
+    );
+  }
+
+  /// Badge yang menampilkan Device ID
+  Widget _buildDeviceInfoBadge() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _deviceId != null
+            ? AppColors.success.withOpacity(0.08)
+            : AppColors.warning.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: _deviceId != null
+              ? AppColors.success.withOpacity(0.2)
+              : AppColors.warning.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _deviceId != null ? Icons.smartphone : Icons.warning_amber_rounded,
+            size: 16,
+            color: _deviceId != null ? AppColors.success : AppColors.warning,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              _deviceId != null
+                  ? 'Device: ${_deviceId!.length > 20 ? '${_deviceId!.substring(0, 20)}...' : _deviceId}'
+                  : 'Getting device info...',
+              style: TextStyle(
+                fontSize: 12,
+                color: _deviceId != null
+                    ? AppColors.success
+                    : AppColors.warning,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (_deviceId == null) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.warning.withOpacity(0.7),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -204,6 +452,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: AppColors.textMuted.withOpacity(0.7),
                     size: 22,
                   ),
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
                   onPressed: () {
                     setState(() {
                       _obscurePassword = !_obscurePassword;
@@ -228,10 +483,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   InputDecoration _inputDecoration(
-      String hint,
-      IconData icon, {
-        Widget? suffixIcon,
-      }) {
+    String hint,
+    IconData icon, {
+    Widget? suffixIcon,
+  }) {
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(
@@ -315,6 +570,41 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: _isLoading
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primaryDark.withOpacity(0.7),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Signing in...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryDark.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                )
+              : const Text(
+                  'Login',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
         child: _isLoading
             ? const SizedBox(
           width: 24,
@@ -341,6 +631,26 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildForgotPassword() {
     return Center(
       child: TextButton(
+        onPressed: _isLoading
+            ? null
+            : () {
+                Get.snackbar(
+                  'Info',
+                  'Hubungi admin untuk reset password',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: AppColors.primary,
+                  colorText: Colors.white,
+                  margin: const EdgeInsets.all(16),
+                  borderRadius: 12,
+                  icon: const Icon(Icons.info_outline, color: Colors.white),
+                );
+              },
+        child: Text(
+          'Forgot Password?',
+          style: TextStyle(
+            color: _isLoading
+                ? AppColors.textMuted.withOpacity(0.5)
+                : AppColors.textMuted,
         onPressed: () {
           Get.snackbar(
             'Info',
@@ -363,4 +673,62 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  Widget _buildLoadingOverlay() {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Container(
+        color: Colors.black.withOpacity(0.3),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Animated loading indicator
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 4,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
+                    backgroundColor: AppColors.gold.withOpacity(0.2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Verifying credentials...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please wait',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted.withOpacity(0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 }

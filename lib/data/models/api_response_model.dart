@@ -44,12 +44,30 @@ class FaceRecognitionResponse {
   });
 
   factory FaceRecognitionResponse.fromJson(Map<String, dynamic> json) {
+    if (json is List && json.isNotEmpty) {
+      final data = json[0] as Map<String, dynamic>;
+      return FaceRecognitionResponse(
+        success: data['success'] ?? false,
+        message: data['message'] ?? '-',
+        confidence: data['conf'] != null
+            ? double.tryParse(data['conf'].toString())
+            : null,
+        isMatch: data['success'] ?? false,
+        userId: data['induk'] ?? data['rfid'],
+      );
+    }
+
+    // Handle standard API response format
     return FaceRecognitionResponse(
       success: json['success'] ?? false,
       message: json['message'],
-      confidence: json['confidence']?.toDouble(),
-      isMatch: json['is_match'] ?? json['match'],
-      userId: json['user_id'],
+      confidence:
+          json['confidence']?.toDouble() ??
+          (json['conf'] != null
+              ? double.tryParse(json['conf'].toString())
+              : null),
+      isMatch: json['is_match'] ?? json['match'] ?? json['success'] ?? false,
+      userId: json['user_id'] ?? json['induk'] ?? json['rfid'],
     );
   }
 }
@@ -60,20 +78,35 @@ class ApprovalResponse {
   final String? message;
   final String? documentNumber;
   final String? newStatus;
+  final String? approvedBy;
+  final String? approvedAt;
+  final bool? faceVerified;
+  final double? faceConfidence;
 
   ApprovalResponse({
     required this.success,
     this.message,
     this.documentNumber,
     this.newStatus,
+    this.approvedBy,
+    this.approvedAt,
+    this.faceVerified,
+    this.faceConfidence,
   });
 
   factory ApprovalResponse.fromJson(Map<String, dynamic> json) {
+    // Handle face_verification nested object from Beeceptor
+    final faceVerification = json['face_verification'] as Map<String, dynamic>?;
+
     return ApprovalResponse(
       success: json['success'] ?? false,
       message: json['message'],
-      documentNumber: json['document_number'],
-      newStatus: json['status'],
+      documentNumber: json['document_number'] ?? json['no_document'],
+      newStatus: json['new_status'] ?? json['status'],
+      approvedBy: json['approved_by'],
+      approvedAt: json['approved_at'],
+      faceVerified: faceVerification?['verified'],
+      faceConfidence: faceVerification?['confidence']?.toDouble(),
     );
   }
 }

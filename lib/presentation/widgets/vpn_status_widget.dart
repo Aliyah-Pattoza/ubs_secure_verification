@@ -8,74 +8,64 @@ class VpnStatusBadge extends StatelessWidget {
   final bool showDetails;
   final VoidCallback? onTap;
 
-  const VpnStatusBadge({
-    super.key,
-    this.showDetails = false,
-    this.onTap,
-  });
+  const VpnStatusBadge({super.key, this.showDetails = false, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GetX<VpnService>(
-      init: VpnService(),
-      builder: (vpnService) {
-        final status = vpnService.status.value;
-        final config = _getStatusConfig(status);
+    if (!Get.isRegistered<VpnService>()) {
+      return const SizedBox.shrink();
+    }
+    final vpnService = Get.find<VpnService>();
+    return Obx(() {
+      final status = vpnService.status.value;
+      final config = _getStatusConfig(status);
 
-        return GestureDetector(
-          onTap: onTap ?? () => _showVpnBottomSheet(context, vpnService),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: EdgeInsets.symmetric(
-              horizontal: showDetails ? 12 : 8,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: config.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: config.color.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Status icon with animation
-                if (status == VpnStatus.connecting ||
-                    status == VpnStatus.disconnecting)
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(config.color),
-                    ),
-                  )
-                else
-                  Icon(
-                    config.icon,
-                    size: 14,
+      return GestureDetector(
+        onTap: onTap ?? () => _showVpnBottomSheet(context, vpnService),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: EdgeInsets.symmetric(
+            horizontal: showDetails ? 12 : 8,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: config.color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: config.color.withOpacity(0.3), width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Status icon with animation
+              if (status == VpnStatus.connecting ||
+                  status == VpnStatus.disconnecting)
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(config.color),
+                  ),
+                )
+              else
+                Icon(config.icon, size: 14, color: config.color),
+
+              if (showDetails) ...[
+                const SizedBox(width: 6),
+                Text(
+                  config.label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                     color: config.color,
                   ),
-
-                if (showDetails) ...[
-                  const SizedBox(width: 6),
-                  Text(
-                    config.label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: config.color,
-                    ),
-                  ),
-                ],
+                ),
               ],
-            ),
+            ],
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
 
   _StatusConfig _getStatusConfig(VpnStatus status) {
@@ -105,7 +95,6 @@ class VpnStatusBadge extends StatelessWidget {
           color: AppColors.error,
         );
       case VpnStatus.disconnected:
-      default:
         return _StatusConfig(
           icon: Icons.shield_outlined,
           label: 'VPN Off',
@@ -115,6 +104,7 @@ class VpnStatusBadge extends StatelessWidget {
   }
 
   void _showVpnBottomSheet(BuildContext context, VpnService vpnService) {
+    if (!context.mounted) return;
     Get.bottomSheet(
       VpnStatusSheet(vpnService: vpnService),
       isScrollControlled: true,
@@ -127,11 +117,7 @@ class _StatusConfig {
   final String label;
   final Color color;
 
-  _StatusConfig({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
+  _StatusConfig({required this.icon, required this.label, required this.color});
 }
 
 /// Bottom sheet untuk detail VPN
@@ -175,9 +161,11 @@ class VpnStatusSheet extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   // Connection Info
-                  Obx(() => vpnService.isConnected
-                      ? _buildConnectionInfo()
-                      : const SizedBox()),
+                  Obx(
+                    () => vpnService.isConnected
+                        ? _buildConnectionInfo()
+                        : const SizedBox(),
+                  ),
 
                   // Connect/Disconnect Button
                   const SizedBox(height: 24),
@@ -223,10 +211,7 @@ class VpnStatusSheet extends StatelessWidget {
               ),
               Text(
                 'Secure tunnel for UBS transactions',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textMuted,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
             ],
           ),
@@ -252,7 +237,10 @@ class VpnStatusSheet extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: isConnected
-                ? [AppColors.success.withOpacity(0.1), AppColors.success.withOpacity(0.05)]
+                ? [
+                    AppColors.success.withOpacity(0.1),
+                    AppColors.success.withOpacity(0.05),
+                  ]
                 : [AppColors.backgroundLight, AppColors.background],
           ),
           borderRadius: BorderRadius.circular(20),
@@ -326,32 +314,40 @@ class VpnStatusSheet extends StatelessWidget {
           const Divider(height: 20),
 
           // Connection Duration
-          Obx(() => _buildInfoRow(
-            icon: Icons.timer_outlined,
-            label: 'Duration',
-            value: vpnService.connectionDuration,
-          )),
+          Obx(
+            () => _buildInfoRow(
+              icon: Icons.timer_outlined,
+              label: 'Duration',
+              value: vpnService.connectionDuration,
+            ),
+          ),
           const Divider(height: 20),
 
           // Speed
           Row(
             children: [
               Expanded(
-                child: Obx(() => _buildSpeedInfo(
-                  icon: Icons.arrow_upward_rounded,
-                  label: 'Upload',
-                  value: vpnService.formatSpeed(vpnService.uploadSpeed.value),
-                  color: AppColors.success,
-                )),
+                child: Obx(
+                  () => _buildSpeedInfo(
+                    icon: Icons.arrow_upward_rounded,
+                    label: 'Upload',
+                    value: vpnService.formatSpeed(vpnService.uploadSpeed.value),
+                    color: AppColors.success,
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Obx(() => _buildSpeedInfo(
-                  icon: Icons.arrow_downward_rounded,
-                  label: 'Download',
-                  value: vpnService.formatSpeed(vpnService.downloadSpeed.value),
-                  color: AppColors.primary,
-                )),
+                child: Obx(
+                  () => _buildSpeedInfo(
+                    icon: Icons.arrow_downward_rounded,
+                    label: 'Download',
+                    value: vpnService.formatSpeed(
+                      vpnService.downloadSpeed.value,
+                    ),
+                    color: AppColors.primary,
+                  ),
+                ),
               ),
             ],
           ),
@@ -429,8 +425,8 @@ class VpnStatusSheet extends StatelessWidget {
     return Obx(() {
       final status = vpnService.status.value;
       final isConnected = status == VpnStatus.connected;
-      final isLoading = status == VpnStatus.connecting ||
-          status == VpnStatus.disconnecting;
+      final isLoading =
+          status == VpnStatus.connecting || status == VpnStatus.disconnecting;
 
       return SizedBox(
         width: double.infinity,
@@ -439,31 +435,35 @@ class VpnStatusSheet extends StatelessWidget {
           onPressed: isLoading ? null : () => vpnService.toggle(),
           icon: isLoading
               ? SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isConnected ? AppColors.error : Colors.white,
-              ),
-            ),
-          )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isConnected ? AppColors.error : Colors.white,
+                    ),
+                  ),
+                )
               : Icon(
-            isConnected ? Icons.power_settings_new_rounded : Icons.power_rounded,
-          ),
+                  isConnected
+                      ? Icons.power_settings_new_rounded
+                      : Icons.power_rounded,
+                ),
           label: Text(
             isLoading
-                ? (status == VpnStatus.connecting ? 'Connecting...' : 'Disconnecting...')
+                ? (status == VpnStatus.connecting
+                      ? 'Connecting...'
+                      : 'Disconnecting...')
                 : (isConnected ? 'Disconnect' : 'Connect'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: isConnected ? AppColors.error : AppColors.success,
             foregroundColor: Colors.white,
-            disabledBackgroundColor: (isConnected ? AppColors.error : AppColors.success).withOpacity(0.5),
+            disabledBackgroundColor:
+                (isConnected ? AppColors.error : AppColors.success).withOpacity(
+                  0.5,
+                ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -480,45 +480,46 @@ class SecurityIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetX<VpnService>(
-      init: VpnService(),
-      builder: (vpnService) {
-        final isSecure = vpnService.isConnected;
+    if (!Get.isRegistered<VpnService>()) {
+      return const SizedBox.shrink();
+    }
+    final vpnService = Get.find<VpnService>();
+    return Obx(() {
+      final isSecure = vpnService.isConnected;
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSecure
+              ? AppColors.success.withOpacity(0.1)
+              : AppColors.warning.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
             color: isSecure
-                ? AppColors.success.withOpacity(0.1)
-                : AppColors.warning.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSecure
-                  ? AppColors.success.withOpacity(0.3)
-                  : AppColors.warning.withOpacity(0.3),
-            ),
+                ? AppColors.success.withOpacity(0.3)
+                : AppColors.warning.withOpacity(0.3),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isSecure ? Icons.lock_rounded : Icons.lock_open_rounded,
-                size: 12,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSecure ? Icons.lock_rounded : Icons.lock_open_rounded,
+              size: 12,
+              color: isSecure ? AppColors.success : AppColors.warning,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              isSecure ? 'Secure' : 'Not Secure',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
                 color: isSecure ? AppColors.success : AppColors.warning,
               ),
-              const SizedBox(width: 4),
-              Text(
-                isSecure ? 'Secure' : 'Not Secure',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: isSecure ? AppColors.success : AppColors.warning,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
