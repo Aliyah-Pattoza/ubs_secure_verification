@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../data/models/transaction_model.dart';
+import '../../../core/services/vpn_service.dart';
 import '../../controllers/transaction_controller.dart';
+import '../../widgets/vpn_status_widget.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -197,9 +199,9 @@ class _TransactionListScreenState extends State<TransactionListScreen>
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Notification Badge
-              _buildNotificationButton(controller),
-              const SizedBox(width: 2),
+              // VPN Status Button
+              _buildVpnButton(),
+              const SizedBox(width: 8),
 
               // Logout Button
               IconButton(
@@ -217,55 +219,97 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  Widget _buildNotificationButton(TransactionController controller) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        IconButton(
-          onPressed: () {
-            Get.snackbar(
-              'Notifications',
-              'You have ${controller.transactions.length} pending transactions',
-              snackPosition: SnackPosition.TOP,
-              backgroundColor: AppColors.primary,
-              colorText: Colors.white,
-            );
-          },
-          icon: const Icon(Icons.notifications_outlined, size: 20),
-          color: AppColors.primary,
-          tooltip: 'Notifications',
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(),
-        ),
-        Obx(() {
-          if (controller.transactions.isEmpty) {
-            return const SizedBox.shrink();
-          }
-          return Positioned(
-            right: 4,
-            top: 4,
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-              decoration: const BoxDecoration(
-                color: AppColors.error,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  '${controller.transactions.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
+  Widget _buildVpnButton() {
+    // Check if VpnService is registered
+    if (!Get.isRegistered<VpnService>()) {
+      // Register VpnService if not exists
+      Get.put(VpnService());
+    }
+    
+    final vpnService = Get.find<VpnService>();
+    
+    return Obx(() {
+      final status = vpnService.status.value;
+      final isConnected = status == VpnStatus.connected;
+      final isConnecting = status == VpnStatus.connecting;
+      final isDisconnecting = status == VpnStatus.disconnecting;
+      final isLoading = isConnecting || isDisconnecting;
+      
+      return GestureDetector(
+        onTap: () => _showVpnStatusSheet(vpnService),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isConnected 
+                ? AppColors.success.withOpacity(0.1)
+                : isLoading 
+                    ? AppColors.warning.withOpacity(0.1)
+                    : AppColors.textMuted.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isConnected 
+                  ? AppColors.success.withOpacity(0.3)
+                  : isLoading 
+                      ? AppColors.warning.withOpacity(0.3)
+                      : AppColors.textMuted.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Status indicator dot or loading
+              if (isLoading)
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.warning,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
+                )
+              else
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isConnected ? AppColors.success : AppColors.textMuted,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              const SizedBox(width: 6),
+              Text(
+                isConnected 
+                    ? 'VPN On'
+                    : isConnecting 
+                        ? 'Connecting'
+                        : isDisconnecting 
+                            ? 'Disconnecting'
+                            : 'VPN Off',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isConnected 
+                      ? AppColors.success
+                      : isLoading 
+                          ? AppColors.warning
+                          : AppColors.textMuted,
                 ),
               ),
-            ),
-          );
-        }),
-      ],
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  void _showVpnStatusSheet(VpnService vpnService) {
+    Get.bottomSheet(
+      VpnStatusSheet(vpnService: vpnService),
+      isScrollControlled: true,
     );
   }
 
